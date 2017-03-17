@@ -21,48 +21,19 @@ import uk.ac.bris.cs.gamekit.graph.Edge;
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
 
-import uk.ac.bris.cs.gamekit.graph.Graph;
-
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame {
+
+	public List<Boolean> rounds;
+	public Graph<Integer, Transport> graph;
+	public PlayerConfiguration mrX;
+	public PlayerConfiguration firstDetective;
+	public PlayerConfiguration restOfTheDetectives;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
-				// @param rounds should be non-null and not empty
 				this.rounds = requireNonNull(rounds);
-				if (rounds.isEmpty()) {
-					throw new IllegalArgumentException("Empty rounds");
-				}
-
-				// @param graph should be non-null and not empty
-				this.graph = requireNonNull(graph);
-				if (graph.isEmpty()) {
-					throw new IllegalArgumentException("Empty graph");
-				}
-
-				// @param mrX must be Black
-				if (mrX.colour != Black) {
-					throw new IllegalArgumentException("MrX should be Black");
-				}
-
-				// store player configurations into temporary array
-				ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
-				for (PlayerConfiguration configuration : restOfTheDetectives) {
-					configurations.add(requireNonNull(configuration));
-				}
-				configurations.add(0, firstDetective);
-				configurations.add(0, mrX);
-
-				// check whether players have duplicate locations
-				Set<Integer> set = new HashSet<>();
-				for (PlayerConfiguration configuration : configurations) {
-					if (set.contains(configuration.location)) {
-						throw new IllegalArgumentException("Duplicate location");
-					}
-					
-					set.add(configuration.location);
-				}
 	}
 
 	@Override
