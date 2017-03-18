@@ -48,6 +48,11 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				if (graph.isEmpty()) {
 				  throw new IllegalArgumentException("Empty graph");
 				}
+
+				// mrXs colour must be Black
+				if (mrX.colour != Black) {
+    			throw new IllegalArgumentException("MrX should be Black");
+				}
 	}
 
 	@Override
