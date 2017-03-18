@@ -33,11 +33,11 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
-				// rounds must be non-null
+				// validate non-null arguments
 				this.rounds = requireNonNull(rounds);
-
-				// graph must be non-null
 				this.graph = requireNonNull(graph);
+				this.mrX = requireNonNull(mrX);
+				this.firstDetective = requireNonNull(firstDetective);
 
 				// rounds must not be empty
 				if (rounds.isEmpty()) {
