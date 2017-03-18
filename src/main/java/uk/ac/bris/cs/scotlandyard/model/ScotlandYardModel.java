@@ -38,6 +38,16 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 				// graph must be non-null
 				this.graph = requireNonNull(graph);
+
+				// rounds must not be empty
+				if (rounds.isEmpty()) {
+    			throw new IllegalArgumentException("Empty rounds");
+				}
+
+				// graph must not be empty
+				if (graph.isEmpty()) {
+				  throw new IllegalArgumentException("Empty graph");
+				}
 	}
 
 	@Override
