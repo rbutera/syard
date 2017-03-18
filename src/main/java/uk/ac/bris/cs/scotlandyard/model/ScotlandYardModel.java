@@ -33,7 +33,11 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
+				// rounds must be non-null
 				this.rounds = requireNonNull(rounds);
+
+				// graph must be non-null
+				this.graph = requireNonNull(graph);
 	}
 
 	@Override
