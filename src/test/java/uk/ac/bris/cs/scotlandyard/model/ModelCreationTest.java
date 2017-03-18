@@ -31,14 +31,14 @@ import uk.ac.bris.cs.scotlandyard.model.PlayerConfiguration.Builder;
 public class ModelCreationTest extends ModelTestBase {
 
 	@Test(expected = NullPointerException.class)
-	public void testNullMrXShouldThrow() {
+	public void testNullMrXShouldThrow() { // PASSES
 		createGame(
 				null,
 				of(Red, 1));
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testNullDetectiveShouldThrow() {
+	public void testNullDetectiveShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				null);
@@ -67,7 +67,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testSwappedMrXShouldThrow() {
+	public void testSwappedMrXShouldThrow() { // PASSES
 		createGame(
 				of(Blue, 1),
 				of(Black, 2));
@@ -132,7 +132,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testEmptyRoundsShouldThrow() {
+	public void testEmptyRoundsShouldThrow() { // PASSES
 		createGame(
 				emptyList(),
 				defaultGraph(),
@@ -141,7 +141,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testNullRoundsShouldThrow() {
+	public void testNullRoundsShouldThrow() { // PASSES
 		createGame(
 				null,
 				defaultGraph(),
@@ -150,7 +150,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testEmptyMapShouldThrow() {
+	public void testEmptyMapShouldThrow() { // PASSES
 		createGame(
 				emptyList(),
 				new UndirectedGraph<>(),
@@ -159,7 +159,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testNullMapShouldThrow() {
+	public void testNullMapShouldThrow() { // PASSES
 		createGame(
 				rounds(true),
 				(Graph<Integer, Transport>) null,
