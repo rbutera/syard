@@ -26,33 +26,28 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	public List<Boolean> rounds;
 	public Graph<Integer, Transport> graph;
-	public PlayerConfiguration mrX;
-	public List<PlayerConfiguration> detectives;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
-				// validate non-null arguments
+				// construct member variables, validating they're non-null
 				this.rounds = requireNonNull(rounds);
 				this.graph = requireNonNull(graph);
-				this.mrX = requireNonNull(mrX);
-				this.detectives.add(requireNonNull(firstDetective));
-				for (int i=1; i<restOfTheDetectives.length + 1; i++) {this.detectives.add(requireNonNull(restOfTheDetectives[i]));}
 
-				// rounds must not be empty
-				if (rounds.isEmpty()) {
-    			throw new IllegalArgumentException("Empty rounds");
+				ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
+				for (PlayerConfiguration config : restOfTheDetectives) {
+					configurations.add(requireNonNull(config));
 				}
+				configurations.add(0, requireNonNull(firstDetective));
+				configurations.add(0, requireNonNull(mrX));
 
-				// graph must not be empty
-				if (graph.isEmpty()) {
-				  throw new IllegalArgumentException("Empty graph");
-				}
+				// verify member variables are not empty
+				if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 
-				// mrXs colour must be Black
-				if (mrX.colour != Black) {
-    			throw new IllegalArgumentException("MrX should be Black");
-				}
+				// mrX should be Black
+				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 	}
 
 	@Override
