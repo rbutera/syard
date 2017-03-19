@@ -97,7 +97,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testDetectiveHaveSecretTicketShouldThrow() {
+	public void testDetectiveHaveSecretTicketShouldThrow() { // PASSES
 		PlayerConfiguration blue = new Builder(Blue).using(mocked())
 				.with(makeTickets(1, 1, 1, 0, 1))
 				.at(2).build();
@@ -105,7 +105,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testDetectiveHaveDoubleTicketShouldThrow() {
+	public void testDetectiveHaveDoubleTicketShouldThrow() { // PASSES
 		PlayerConfiguration blue = new Builder(Blue).using(mocked())
 				.with(makeTickets(1, 1, 0, 1, 1))
 				.at(2).build();
@@ -113,7 +113,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMrXMissingAnyTicketsShouldThrow() {
+	public void testMrXMissingAnyTicketsShouldThrow() { // PASSES
 		Map<Ticket, Integer> tickets = new HashMap<>();
 		tickets.put(Ticket.Taxi, 1);
 		PlayerConfiguration blue = new Builder(Blue).using(mocked())
@@ -122,7 +122,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testDetectiveMissingAnyTicketsShouldTrow() {
+	public void testDetectiveMissingAnyTicketsShouldThrow() { // PASSES
 		Map<Ticket, Integer> tickets = new HashMap<>();
 		tickets.put(Ticket.Secret, 1);
 		tickets.put(Ticket.Double, 1);
