@@ -41,13 +41,27 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				configurations.add(0, requireNonNull(firstDetective));
 				configurations.add(0, requireNonNull(mrX));
 
+				// mrX should be Black
+				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
+
+				// players cannot have duplicate locations
+				Set<Integer> locations = new HashSet<>();
+				for (PlayerConfiguration config : configurations) {
+					if (locations.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
+					locations.add(config.location);
+				}
+
+				// players cannot have duplicate colours
+				Set<Colour> colours = new HashSet<>();
+				for (PlayerConfiguration config : configurations) {
+					if (colours.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
+					colours.add(config.colour);
+				}
+
 				// verify member variables are not empty
 				if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
 				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
-
-				// mrX should be Black
-				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 	}
 
 	@Override

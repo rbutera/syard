@@ -60,7 +60,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testMoreThanOneMrXShouldThrow() {
+	public void testMoreThanOneMrXShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				of(Black, 2));
@@ -74,7 +74,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testDuplicateDetectivesShouldThrow() {
+	public void testDuplicateDetectivesShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				of(Blue, 2),
@@ -82,14 +82,14 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testLocationOverlapBetweenMrXAndDetectiveShouldThrow() {
+	public void testLocationOverlapBetweenMrXAndDetectiveShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				of(Blue, 1));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testLocationOverlapBetweenDetectivesShouldThrow() {
+	public void testLocationOverlapBetweenDetectivesShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				of(Blue, 2),
@@ -168,14 +168,14 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testTwoPlayer() {
+	public void testTwoPlayer() { // PASSES
 		createGame(
 				validMrX(),
 				validBlue());
 	}
 
 	@Test
-	public void testFivePlayer() {
+	public void testFivePlayer() { // PASSES
 		createGame(
 				validMrX(),
 				validRed(),
