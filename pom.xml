@@ -112,7 +112,7 @@
                     <includes>
                         <include>${runSuite}</include>
                     </includes>
-                </configuration>
+                <trimStackTrace>false</trimStackTrace></configuration>
             </plugin>
 
             <plugin>
