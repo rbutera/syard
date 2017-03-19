@@ -102,7 +102,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Returns the default graph used in the actual game
-	 * 
+	 *
 	 * @return the graph; never null
 	 */
 	static Graph<Integer, Transport> defaultGraph() {
@@ -115,7 +115,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 	 * The player will also have correct amount of tickets depending oh which
 	 * colour they are. See {@link #detectiveTickets()} and
 	 * {@link #mrXTickets()}
-	 * 
+	 *
 	 * @param colour the colour of the player
 	 * @param location the location the player is at
 	 * @return a player configuration; never null
@@ -161,7 +161,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * No tickets (zero for all kinds ticket)
-	 * 
+	 *
 	 * @return a map with created using
 	 *         {@link #makeTickets(int, int, int, int, int)}; never null
 	 */
@@ -171,7 +171,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Create a map of tickets
-	 * 
+	 *
 	 * @param taxi amount of tickets for {@link Ticket#Taxi}
 	 * @param bus amount of tickets for {@link Ticket#Bus}
 	 * @param underground amount of tickets for {@link Ticket#Underground}
@@ -192,7 +192,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a mocked player
-	 * 
+	 *
 	 * @return mocked player; never null
 	 */
 	static Player mocked() {
@@ -201,7 +201,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * A common hand picked test location with small valid move(~60)
-	 * 
+	 *
 	 * @return a valid {@link PlayerConfiguration}
 	 */
 	static PlayerConfiguration mrXAt45() {
@@ -210,7 +210,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * A common hand picked test location not far from MrX
-	 * 
+	 *
 	 * @return a valid {@link PlayerConfiguration}
 	 */
 	static PlayerConfiguration blueAt94() {
@@ -219,7 +219,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * A common hand picked test location not far from MrX
-	 * 
+	 *
 	 * @return a valid {@link PlayerConfiguration}
 	 */
 	static PlayerConfiguration redAt111() {
@@ -228,7 +228,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Asserts that all given tickets are valid or -1 to skip assertion
-	 * 
+	 *
 	 * @param game the game to use
 	 * @param colour the colour to assert
 	 * @param taxi taxi ticket count or -1 to skip
@@ -261,7 +261,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a new game with 24 rounds and the default graph
-	 * 
+	 *
 	 * @param mrX Mr.X
 	 * @param firstDetective first detective
 	 * @param restOfTheDetectives the rest of the detectives
@@ -275,7 +275,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a new game with given rounds and the default graph
-	 * 
+	 *
 	 * @param rounds rounds
 	 * @param mrX Mr.X
 	 * @param firstDetective first detective
@@ -289,7 +289,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Returns a list of rounds
-	 * 
+	 *
 	 * @param rounds the rounds
 	 * @return a list; never null
 	 */
@@ -348,7 +348,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Any given valid white configuration
-	 * 
+	 *
 	 * @return a valid {@link PlayerConfiguration}
 	 */
 	static PlayerConfiguration validWhite() {
@@ -358,7 +358,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 	/**
 	 * Keep calling {@link ScotlandYardGame#startRotate()} for the specified
 	 * amount of time
-	 * 
+	 *
 	 * @param game the game to use
 	 * @param round the amount to time to start a round
 	 */
@@ -369,7 +369,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a new {@link TicketMove}
-	 * 
+	 *
 	 * @param colour the colour of the move
 	 * @param ticket the ticket of the move
 	 * @param destination the destination of move
@@ -381,7 +381,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a new {@link DoubleMove}
-	 * 
+	 *
 	 * @param colour colour for the move
 	 * @param first the first ticket
 	 * @param firstDestination the first destination
@@ -397,7 +397,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 
 	/**
 	 * Creates a new {@link PassMove}
-	 * 
+	 *
 	 * @param colour colour for the move
 	 * @return a new pass move
 	 */
@@ -409,7 +409,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 	 * Force choosing a move for the
 	 * {@link Player#makeMove(ScotlandYardView, int, Set, Consumer)} callback
 	 * <br>
-	 * 
+	 *
 	 * @param consumer represents the 2nd and 3rd argument of
 	 *        {@link Player#makeMove(ScotlandYardView, int, Set, Consumer)}
 	 * @return an answer to be used with
@@ -431,7 +431,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 	 * <br>
 	 * An assertion error will be thrown if the supplied move is not in the
 	 * callback
-	 * 
+	 *
 	 * @param move the move to choose
 	 * @return an answer to be used with
 	 *         {@link org.mockito.Mockito#doAnswer(Answer)}
@@ -442,8 +442,7 @@ public abstract class ModelTestBase implements ScotlandYardGameFactory {
 			int location = invocation.getArgument(1);
 			Set<Move> moves = invocation.getArgument(2);
 			Consumer<Move> callback = invocation.getArgument(3);
-			assertThat(moves).as("[Location %s] trying to select %s from given valid moves of %s",
-					location, moves, move).contains(move);
+			assertThat(moves).as("[Location %s] trying to select %s from given valid moves of %s", location, move, moves).contains(move);
 			callback.accept(move);
 			return null;
 		};
