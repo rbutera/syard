@@ -186,7 +186,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetRoundsMatchesSupplied() throws Exception {
+	public void testGetRoundsMatchesSupplied() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(true, false, true, true),
 				defaultGraph(),
@@ -196,7 +196,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void testGetRoundsIsImmutable() throws Exception {
+	public void testGetRoundsIsImmutable() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				new ArrayList<>(asList(true, false)),
 				defaultGraph(),
@@ -206,7 +206,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetGraphMatchesSupplied() throws Exception {
+	public void testGetGraphMatchesSupplied() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(true, false),
 				defaultGraph(),
@@ -216,7 +216,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void testGetGraphIsImmutable() throws Exception {
+	public void testGetGraphIsImmutable() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(true, false),
 				new UndirectedGraph<>(defaultGraph()),
@@ -226,7 +226,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetPlayersMatchesSupplied() throws Exception {
+	public void testGetPlayersMatchesSupplied() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(true, false, true, false),
 				defaultGraph(),
@@ -238,7 +238,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void testGetPlayersIsImmutable() throws Exception {
+	public void testGetPlayersIsImmutable() throws Exception { // PASSES
 		createValidGame().getPlayers().add(Red);
 	}
 
@@ -268,7 +268,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetPlayersStartsWithBlack() throws Exception {
+	public void testGetPlayersStartsWithBlack() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(true, false, true, false),
 				defaultGraph(),

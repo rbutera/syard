@@ -26,6 +26,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	public List<Boolean> rounds;
 	public Graph<Integer, Transport> graph;
+	public List<ScotlandYardPlayer> syardplayers;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -44,8 +45,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				// mrX should be Black
 				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 
-				// players cannot have duplicate locations, colours, and there are
-				// limitations for which tickets certain players can have
+				// player validation
 				Set<Integer> locationsset = new HashSet<>();
 				Set<Colour> coloursset = new HashSet<>();
 				for (PlayerConfiguration config : configurations) {
@@ -75,7 +75,13 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				// verify member variables are not empty
 				if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
 				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
-				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+
+				// construct players
+				this.syardplayers = new ArrayList<ScotlandYardPlayer>();
+				for (PlayerConfiguration config : configurations) {
+					ScotlandYardPlayer syardplayer = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
+					this.syardplayers.add(syardplayer);
+				}
 	}
 
 	@Override
@@ -104,8 +110,11 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Colour> getPlayers() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		ArrayList<Colour> players = new ArrayList<Colour>();
+		for (ScotlandYardPlayer currentplayer : syardplayers) {
+			players.add(currentplayer.colour());
+		}
+		return Collections.unmodifiableList(players);
 	}
 
 	@Override
@@ -152,14 +161,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Boolean> getRounds() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return Collections.unmodifiableList(rounds);
 	}
 
 	@Override
 	public Graph<Integer, Transport> getGraph() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return new ImmutableGraph<Integer, Transport>(graph);
 	}
 
 }
