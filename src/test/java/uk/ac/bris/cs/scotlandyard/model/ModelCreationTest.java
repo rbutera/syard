@@ -45,7 +45,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = NullPointerException.class)
-	public void testAnyNullDetectiveShouldThrow() {
+	public void testAnyNullDetectiveShouldThrow() { // PASSES
 		createGame(
 				of(Black, 1),
 				of(Blue, 2),
