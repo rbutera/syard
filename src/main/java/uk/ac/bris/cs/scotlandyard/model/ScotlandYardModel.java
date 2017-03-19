@@ -123,8 +123,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Set<Colour> getWinningPlayers() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		// TODO: Revisit this later
+		return Collections.unmodifiableSet(Collections.<Colour>emptySet());
 	}
 
 	@Override
