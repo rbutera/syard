@@ -44,18 +44,32 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				// mrX should be Black
 				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 
-				// players cannot have duplicate locations
-				Set<Integer> locations = new HashSet<>();
+				// players cannot have duplicate locations, colours, and there are
+				// limitations for which tickets certain players can have
+				Set<Integer> locationsset = new HashSet<>();
+				Set<Colour> coloursset = new HashSet<>();
 				for (PlayerConfiguration config : configurations) {
-					if (locations.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
-					locations.add(config.location);
-				}
+					// prevent duplicate locations
+					if (locationsset.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
+					locationsset.add(config.location);
 
-				// players cannot have duplicate colours
-				Set<Colour> colours = new HashSet<>();
-				for (PlayerConfiguration config : configurations) {
-					if (colours.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
-					colours.add(config.colour);
+					// prevent duplicate colours
+					if (coloursset.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
+					coloursset.add(config.colour);
+
+					// ensure mapping for each Ticket exists
+					if (!(config.tickets.containsKey(Ticket.Bus)
+					   && config.tickets.containsKey(Ticket.Taxi)
+						 && config.tickets.containsKey(Ticket.Underground)
+				  	 && config.tickets.containsKey(Ticket.Double)
+					   && config.tickets.containsKey(Ticket.Secret))) {
+							 throw new IllegalArgumentException("Player is missing a ticket type");
+					}
+
+					// prevent invalid tickets
+					if (config.colour != Black && (config.tickets.get(Ticket.Secret) != 0 || config.tickets.get(Ticket.Double) != 0)) {
+						throw new IllegalArgumentException("Detectives cannot have Secret or Double tickets");
+					}
 				}
 
 				// verify member variables are not empty
