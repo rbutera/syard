@@ -258,12 +258,12 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetRoundIsNOT_STARTEDInitially() {
+	public void testGetRoundIsNOT_STARTEDInitially() { // PASSES
 		assertThat(createValidGame().getCurrentRound()).isEqualTo(ScotlandYardGame.NOT_STARTED);
 	}
 
 	@Test
-	public void testGetPlayerIsMrXInitially() {
+	public void testGetPlayerIsMrXInitially() { // PASSES
 		assertThat(createValidGame().getCurrentPlayer()).isEqualTo(Black);
 	}
 
@@ -280,7 +280,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetDetectiveLocationMatchesSupplied() {
+	public void testGetDetectiveLocationMatchesSupplied() { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(false, false, false),
 				defaultGraph(),
@@ -298,7 +298,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetPlayerLocationConcealsMrXLocationInitially() throws Exception {
+	public void testGetPlayerLocationConcealsMrXLocationInitially() throws Exception { // PASSES
 		ScotlandYardGame game = createGame(
 				asList(false, false, false),
 				defaultGraph(),
@@ -308,7 +308,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test
-	public void testGetPlayerTicketsMatchesSupplied() {
+	public void testGetPlayerTicketsMatchesSupplied() { // PASSES
 		PlayerConfiguration mrX = new Builder(Black).using(mocked())
 				.with(makeTickets(1, 2, 3, 4, 5)).at(1).build();
 

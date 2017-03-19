@@ -27,6 +27,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public List<Boolean> rounds;
 	public Graph<Integer, Transport> graph;
 	public List<ScotlandYardPlayer> syardplayers;
+	public int currentround;
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
@@ -82,6 +83,9 @@ public class ScotlandYardModel implements ScotlandYardGame {
 					ScotlandYardPlayer syardplayer = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
 					this.syardplayers.add(syardplayer);
 				}
+
+				// at initialisation, the rounds have not started
+				this.currentround = ScotlandYardGame.NOT_STARTED;
 	}
 
 	@Override
@@ -125,32 +129,38 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public int getPlayerLocation(Colour colour) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		if (colour != Black) {
+			for (ScotlandYardPlayer currentplayer : syardplayers) {
+				if (currentplayer.colour() == colour) {return currentplayer.location();}
+			}
+		}
+		return 0;
 	}
 
 	@Override
 	public int getPlayerTickets(Colour colour, Ticket ticket) {
-		// TODO
-		throw new RuntimeException("Implement me");
+		for (ScotlandYardPlayer currentplayer : syardplayers) {
+			if (currentplayer.colour() == colour) {
+				return currentplayer.tickets().get(ticket);
+			}
+		}
+		return 0;
 	}
 
 	@Override
 	public boolean isGameOver() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		// TODO: Revisit this later
+		return false;
 	}
 
 	@Override
 	public Colour getCurrentPlayer() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return syardplayers.get(currentround).colour();
 	}
 
 	@Override
 	public int getCurrentRound() {
-		// TODO
-		throw new RuntimeException("Implement me");
+		return currentround;
 	}
 
 	@Override
