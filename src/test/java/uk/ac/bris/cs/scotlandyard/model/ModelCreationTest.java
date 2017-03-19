@@ -53,7 +53,7 @@ public class ModelCreationTest extends ModelTestBase {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testNoMrXShouldThrow() {
+	public void testNoMrXShouldThrow() { // PASSES
 		createGame(
 				of(Blue, 1),
 				of(Red, 2));
