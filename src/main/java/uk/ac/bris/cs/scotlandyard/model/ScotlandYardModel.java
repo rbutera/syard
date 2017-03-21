@@ -110,7 +110,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public void accept(Move move) {
 		// do something with the Move the current Player wants to play
-		
+		requireNonNull(move);
+		System.out.println(move);
 	}
 
 	@Override
@@ -122,20 +123,23 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		// provide a current set of valid moves to player.makeMove
 		// notify the player to play a move (pass an empty list of Move)
 
+		mCurrentRound++;
+
 		Colour currentPlayerColour = getCurrentPlayer();
 		ScotlandYardPlayer currentPlayer;
+
+		/*Consumer<Move> callback = (Move move) -> {
+			System.out.println(move);
+		};*/
 
 
 		for (ScotlandYardPlayer player: mScotlandYardPlayers) {
 			if (player.colour() == currentPlayerColour) {
 				currentPlayer = player;
+				Set<Move> moves = getValidMoves(currentPlayer);
+				currentPlayer.player().makeMove(this, currentPlayer.location(), moves, this);
 				break;
 			}
-		}
-
-		if(currentPlayer !== null){
-			Set<Move> moves = getValidMoves(currentPlayer);
-			currentPlayer.player().makeMove(this, currentPlayer.location(), moves, callback);
 		}
 
 	}
