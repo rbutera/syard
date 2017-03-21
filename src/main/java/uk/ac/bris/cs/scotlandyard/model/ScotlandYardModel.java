@@ -29,12 +29,31 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public List<ScotlandYardPlayer> syardplayers;
 	public int currentround;
 
+	private validateRounds(List<Boolean> rounds) {
+		this.rounds = requireNonNull(rounds);
+		if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+	}
+
+	private validateGraph(Graph<Integer, Transport> graph) {
+		this.graph = requireNonNull(graph);
+		if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+	}
+
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
-				// construct member variables, validating they're non-null
-				this.rounds = requireNonNull(rounds);
-				this.graph = requireNonNull(graph);
+
+				validateRounds(rounds);
+				validateGraph(graph);
+
+				//this.rounds = requireNonNull(rounds);
+				//if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+
+				//this.graph = requireNonNull(graph);
+				//if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+
+				// mrX should be Black
+				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 
 				ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 				for (PlayerConfiguration config : restOfTheDetectives) {
@@ -42,9 +61,6 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				}
 				configurations.add(0, requireNonNull(firstDetective));
 				configurations.add(0, requireNonNull(mrX));
-
-				// mrX should be Black
-				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 
 				// player validation
 				Set<Integer> locationsset = new HashSet<>();
@@ -72,10 +88,6 @@ public class ScotlandYardModel implements ScotlandYardGame {
 						throw new IllegalArgumentException("Detectives cannot have Secret or Double tickets");
 					}
 				}
-
-				// verify member variables are not empty
-				if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
-				if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 
 				// construct players
 				this.syardplayers = new ArrayList<ScotlandYardPlayer>();
