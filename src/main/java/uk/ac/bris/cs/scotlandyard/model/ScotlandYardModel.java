@@ -15,11 +15,11 @@ import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
 
 // TODO implement all methods and pass all tests
-public class ScotlandYardModel implements ScotlandYardGame {
+public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	public List<Boolean> mRounds;
 	public Graph<Integer, Transport> mGraph;
-	public List<ScotlandYardPlayer> mScotlandYardPlayers;
+	public ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
 	public int mCurrentRound = 0;
 	public int mTotalPlayers = 0;
 	public ArrayList<PlayerConfiguration> mConfigurations;
@@ -108,6 +108,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	}
 
 	@Override
+	public void accept(Move move) {
+		// do something with the Move the current Player wants to play
+		
+	}
+
+	@Override
 	public void startRotate() {
 		// TODO: Complete this method
 
@@ -115,8 +121,28 @@ public class ScotlandYardModel implements ScotlandYardGame {
 		// pick the correct player
 		// provide a current set of valid moves to player.makeMove
 		// notify the player to play a move (pass an empty list of Move)
-		Consumer<Move> consumer = move -> System.out.println(move);
 
+		Colour currentPlayerColour = getCurrentPlayer();
+		ScotlandYardPlayer currentPlayer;
+
+
+		for (ScotlandYardPlayer player: mScotlandYardPlayers) {
+			if (player.colour() == currentPlayerColour) {
+				currentPlayer = player;
+				break;
+			}
+		}
+
+		if(currentPlayer !== null){
+			Set<Move> moves = getValidMoves(currentPlayer);
+			currentPlayer.player().makeMove(this, currentPlayer.location(), moves, callback);
+		}
+
+	}
+
+	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
+		Set<Move> moves = new HashSet<Move>();
+		return moves;
 	}
 
 	@Override
