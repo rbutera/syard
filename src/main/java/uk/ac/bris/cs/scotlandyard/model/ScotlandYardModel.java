@@ -168,9 +168,9 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		int index = 0;
-		Colour current = mConfigurations.get(index)
-				return current;
+		int index = (mCurrentRound % mTotalPlayers) - 1;
+		Colour current = mScotlandYardPlayers.get(index).colour();
+		return current;
 	}
 
 	@Override
