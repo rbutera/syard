@@ -28,50 +28,37 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public Graph<Integer, Transport> graph;
 	public List<ScotlandYardPlayer> syardplayers;
 	public int currentround;
+	public ArrayList<PlayerConfiguration> mConfigurations;
 
-	private validateRounds(List<Boolean> rounds) {
-		this.rounds = requireNonNull(rounds);
-		if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+	private List<Boolean> validateRounds(List<Boolean> rounds) {
+		if (rounds == null || rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+		return requireNonNull(rounds);
 	}
 
-	private validateGraph(Graph<Integer, Transport> graph) {
-		this.graph = requireNonNull(graph);
-		if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+	private Graph<Integer, Transport> validateGraph(Graph<Integer, Transport> graph) {
+		if (graph == null || graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+		return requireNonNull(graph);
 	}
 
 
-	private validateAllPlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
-		// mrX should be Black
+	private ArrayList<PlayerConfiguration> configurePlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
 		if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
-		
 		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 		for (PlayerConfiguration config : restOfTheDetectives) {
 			configurations.add(requireNonNull(config));
 		}
 		configurations.add(0, requireNonNull(firstDetective));
 		configurations.add(0, requireNonNull(mrX));
+		return configurations;
 	}
 
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
 
-				validateRounds(rounds);
-				//this.rounds = requireNonNull(rounds);
-				//if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
-
-				validateGraph(graph);
-				//this.graph = requireNonNull(graph);
-				//if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
-
-				validateAllPlayers(mrX, firstDetective, restOfTheDetectives);
-				//if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
-				//ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
-				//for (PlayerConfiguration config : restOfTheDetectives) {
-				//	configurations.add(requireNonNull(config));
-				//}
-				//configurations.add(0, requireNonNull(firstDetective));
-				//configurations.add(0, requireNonNull(mrX));
+				this.rounds = validateRounds(rounds);
+				this.graph = validateGraph(graph);
+			 	this.mConfigurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
 
 				// player validation
 				Set<Integer> locationsset = new HashSet<>();
