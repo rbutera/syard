@@ -39,28 +39,39 @@ public class ScotlandYardModel implements ScotlandYardGame {
 		if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 	}
 
+
+	private validateAllPlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
+		// mrX should be Black
+		if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
+		
+		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
+		for (PlayerConfiguration config : restOfTheDetectives) {
+			configurations.add(requireNonNull(config));
+		}
+		configurations.add(0, requireNonNull(firstDetective));
+		configurations.add(0, requireNonNull(mrX));
+	}
+
 	public ScotlandYardModel(List<Boolean> rounds, Graph<Integer, Transport> graph,
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
 
 				validateRounds(rounds);
-				validateGraph(graph);
-
 				//this.rounds = requireNonNull(rounds);
 				//if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
 
+				validateGraph(graph);
 				//this.graph = requireNonNull(graph);
 				//if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 
-				// mrX should be Black
-				if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
-
-				ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
-				for (PlayerConfiguration config : restOfTheDetectives) {
-					configurations.add(requireNonNull(config));
-				}
-				configurations.add(0, requireNonNull(firstDetective));
-				configurations.add(0, requireNonNull(mrX));
+				validateAllPlayers(mrX, firstDetective, restOfTheDetectives);
+				//if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
+				//ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
+				//for (PlayerConfiguration config : restOfTheDetectives) {
+				//	configurations.add(requireNonNull(config));
+				//}
+				//configurations.add(0, requireNonNull(firstDetective));
+				//configurations.add(0, requireNonNull(mrX));
 
 				// player validation
 				Set<Integer> locationsset = new HashSet<>();
