@@ -1,33 +1,25 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptySet;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableCollection;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
 import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Double;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Secret;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
-import uk.ac.bris.cs.gamekit.graph.Edge;
+
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
 
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame {
 
-	public List<Boolean> rounds;
-	public Graph<Integer, Transport> graph;
-	public List<ScotlandYardPlayer> syardplayers;
-	public int currentround;
+	public List<Boolean> mRounds;
+	public Graph<Integer, Transport> mGraph;
+	public List<ScotlandYardPlayer> mScotlandYardPlayers;
+	public int mCurrentRound;
 	public ArrayList<PlayerConfiguration> mConfigurations;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
@@ -56,14 +48,14 @@ public class ScotlandYardModel implements ScotlandYardGame {
 			PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 			PlayerConfiguration... restOfTheDetectives) {
 
-				this.rounds = validateRounds(rounds);
-				this.graph = validateGraph(graph);
-			 	this.mConfigurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
+				mRounds = validateRounds(rounds);
+				mGraph = validateGraph(graph);
+			 	mConfigurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
 
-				// player validation
 				Set<Integer> locationsset = new HashSet<>();
 				Set<Colour> coloursset = new HashSet<>();
-				for (PlayerConfiguration config : configurations) {
+
+				for (PlayerConfiguration config : mConfigurations) {
 					// prevent duplicate locations
 					if (locationsset.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
 					locationsset.add(config.location);
@@ -88,14 +80,15 @@ public class ScotlandYardModel implements ScotlandYardGame {
 				}
 
 				// construct players
-				this.syardplayers = new ArrayList<ScotlandYardPlayer>();
-				for (PlayerConfiguration config : configurations) {
-					ScotlandYardPlayer syardplayer = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
-					this.syardplayers.add(syardplayer);
+				mScotlandYardPlayers = new ArrayList<ScotlandYardPlayer>();
+
+				for (PlayerConfiguration config : mConfigurations) {
+					ScotlandYardPlayer player = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
+					this.mScotlandYardPlayers.add(player);
 				}
 
 				// at initialisation, the rounds have not started
-				this.currentround = ScotlandYardGame.NOT_STARTED;
+				this.mCurrentRound = ScotlandYardGame.NOT_STARTED;
 	}
 
 	@Override
@@ -132,7 +125,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	@Override
 	public List<Colour> getPlayers() {
 		ArrayList<Colour> players = new ArrayList<Colour>();
-		for (ScotlandYardPlayer currentplayer : syardplayers) {
+		for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
 			players.add(currentplayer.colour());
 		}
 		return Collections.unmodifiableList(players);
@@ -147,7 +140,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	@Override
 	public int getPlayerLocation(Colour colour) {
 		if (!colour.isMrX()) {
-			for (ScotlandYardPlayer currentplayer : syardplayers) {
+			for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
 				if (currentplayer.colour() == colour) {return currentplayer.location();}
 			}
 		}
@@ -156,7 +149,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public int getPlayerTickets(Colour colour, Ticket ticket) {
-		for (ScotlandYardPlayer currentplayer : syardplayers) {
+		for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
 			if (currentplayer.colour() == colour) {
 				return currentplayer.tickets().get(ticket);
 			}
@@ -172,12 +165,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return syardplayers.get(currentround).colour();
+		return mScotlandYardPlayers.get(mCurrentRound).colour();
 	}
 
 	@Override
 	public int getCurrentRound() {
-		return currentround;
+		return mCurrentRound;
 	}
 
 	@Override
@@ -188,12 +181,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public List<Boolean> getRounds() {
-		return Collections.unmodifiableList(rounds);
+		return Collections.unmodifiableList(mRounds);
 	}
 
 	@Override
 	public Graph<Integer, Transport> getGraph() {
-		return new ImmutableGraph<Integer, Transport>(graph);
+		return new ImmutableGraph<Integer, Transport>(mGraph);
 	}
 
 }
