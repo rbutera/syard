@@ -68,7 +68,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 					}
 
 					// prevent invalid tickets
-					if (config.colour != Black && (config.tickets.get(Ticket.Secret) != 0 || config.tickets.get(Ticket.Double) != 0)) {
+					if (!config.colour.isMrX() && (config.tickets.get(Ticket.Secret) != 0 || config.tickets.get(Ticket.Double) != 0)) {
 						throw new IllegalArgumentException("Detectives cannot have Secret or Double tickets");
 					}
 				}
@@ -102,7 +102,14 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public void startRotate() {
-		// TODO
+		// TODO: Complete this method
+
+		// Workflow for implementation at:
+		// https://www.ole.bris.ac.uk/bbcswebdav/courses/COMS10001_2016/students/model/index.html#example_workflow
+		// (Scroll down to '3. Our next task is...')
+
+		// Before Mr.X makes a move, the round number increments once so that Mr.X
+		// will start on the first round.
 		throw new RuntimeException("Implement me");
 	}
 
@@ -129,7 +136,7 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public int getPlayerLocation(Colour colour) {
-		if (colour != Black) {
+		if (!colour.isMrX()) {
 			for (ScotlandYardPlayer currentplayer : syardplayers) {
 				if (currentplayer.colour() == colour) {return currentplayer.location();}
 			}
