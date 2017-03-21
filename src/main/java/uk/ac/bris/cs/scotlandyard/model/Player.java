@@ -20,6 +20,6 @@ public interface Player {
 	 * @param callback callback when a move is chosen from the given valid
 	 *        moves, the game cannot
 	 */
-	void makeMove(ScotlandYardView view, int location, Set<Move> moves, Consumer<Move> callback);
+	void 	makeMove(ScotlandYardView view, int location, Set<Move> moves, Consumer<Move> callback);
 
 }

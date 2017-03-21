@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
@@ -19,7 +20,8 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public List<Boolean> mRounds;
 	public Graph<Integer, Transport> mGraph;
 	public List<ScotlandYardPlayer> mScotlandYardPlayers;
-	public int mCurrentRound;
+	public int mCurrentRound = 0;
+	public int mTotalPlayers = 0;
 	public ArrayList<PlayerConfiguration> mConfigurations;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
@@ -36,11 +38,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	private ArrayList<PlayerConfiguration> configurePlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
 		if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
 		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
+		configurations.add(requireNonNull(mrX));
+		configurations.add(requireNonNull(firstDetective));
+
 		for (PlayerConfiguration config : restOfTheDetectives) {
 			configurations.add(requireNonNull(config));
 		}
-		configurations.add(0, requireNonNull(firstDetective));
-		configurations.add(0, requireNonNull(mrX));
 		return configurations;
 	}
 
@@ -84,11 +87,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 				for (PlayerConfiguration config : mConfigurations) {
 					ScotlandYardPlayer player = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
-					this.mScotlandYardPlayers.add(player);
+					mScotlandYardPlayers.add(player);
+					mTotalPlayers++;
 				}
 
 				// at initialisation, the rounds have not started
-				this.mCurrentRound = ScotlandYardGame.NOT_STARTED;
+				mCurrentRound = ScotlandYardGame.NOT_STARTED;
 	}
 
 	@Override
@@ -107,13 +111,12 @@ public class ScotlandYardModel implements ScotlandYardGame {
 	public void startRotate() {
 		// TODO: Complete this method
 
-		// Workflow for implementation at:
-		// https://www.ole.bris.ac.uk/bbcswebdav/courses/COMS10001_2016/students/model/index.html#example_workflow
-		// (Scroll down to '3. Our next task is...')
+		// Before Mr.X makes a move, the round number increments once so that Mr. X will start on the first round.
+		// pick the correct player
+		// provide a current set of valid moves to player.makeMove
+		// notify the player to play a move (pass an empty list of Move)
+		Consumer<Move> consumer = move -> System.out.println(move);
 
-		// Before Mr.X makes a move, the round number increments once so that Mr.X
-		// will start on the first round.
-		throw new RuntimeException("Implement me");
 	}
 
 	@Override
@@ -165,7 +168,9 @@ public class ScotlandYardModel implements ScotlandYardGame {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return mScotlandYardPlayers.get(mCurrentRound).colour();
+		int index = 0;
+		Colour current = mConfigurations.get(index)
+				return current;
 	}
 
 	@Override
