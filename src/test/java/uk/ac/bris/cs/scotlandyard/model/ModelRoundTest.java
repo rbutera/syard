@@ -198,6 +198,7 @@ public class ModelRoundTest extends ModelTestBase {
 		game.startRotate();
 	}
 
+	// TODO: rb - revisit startRotate illegal move test
 	@Test(expected = IllegalArgumentException.class)
 	public void testCallbackWithIllegalMoveNotInGivenMovesWillThrow() {
 		PlayerConfiguration black = validMrX();

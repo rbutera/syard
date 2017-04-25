@@ -2,6 +2,10 @@ package uk.ac.bris.cs.scotlandyard.model;
 
 import static java.util.Objects.requireNonNull;
 import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
+import static uk.ac.bris.cs.scotlandyard.model.Colour.Blue;
+import static uk.ac.bris.cs.scotlandyard.model.Ticket.Bus;
+import static uk.ac.bris.cs.scotlandyard.model.Ticket.Taxi;
+import static uk.ac.bris.cs.scotlandyard.model.Ticket.Underground;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -21,6 +25,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	public Graph<Integer, Transport> mGraph;
 	public ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
 	public int mCurrentRound = 0;
+	public int mCurrentTurn = 0;
 	public int mTotalPlayers = 0;
 	public ArrayList<PlayerConfiguration> mConfigurations;
 
@@ -69,7 +74,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 					// ensure mapping for each Ticket exists
 					if (!(config.tickets.containsKey(Ticket.Bus)
-					   && config.tickets.containsKey(Ticket.Taxi)
+					   && config.tickets.containsKey(Taxi)
 						 && config.tickets.containsKey(Ticket.Underground)
 				  	 && config.tickets.containsKey(Ticket.Double)
 					   && config.tickets.containsKey(Ticket.Secret))) {
@@ -124,28 +129,58 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		// notify the player to play a move (pass an empty list of Move)
 
 		mCurrentRound++;
-
 		Colour currentPlayerColour = getCurrentPlayer();
 		ScotlandYardPlayer currentPlayer;
+		Set<Move> moves;
 
 		/*Consumer<Move> callback = (Move move) -> {
 			System.out.println(move);
 		};*/
 
-
 		for (ScotlandYardPlayer player: mScotlandYardPlayers) {
-			if (player.colour() == currentPlayerColour) {
-				currentPlayer = player;
-				Set<Move> moves = getValidMoves(currentPlayer);
-				currentPlayer.player().makeMove(this, currentPlayer.location(), moves, this);
-				break;
-			}
+			currentPlayer = player;
+			moves = getValidMoves(currentPlayer);
+			currentPlayer.player().makeMove(this, currentPlayer.location(), moves, this);
 		}
 
 	}
 
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
 		Set<Move> moves = new HashSet<Move>();
+
+		TicketMove ticket;
+		if (player.colour() == Black) {
+			ticket = new TicketMove(Black, Taxi, 86);
+			moves.add(ticket);
+		}
+		if (player.colour() == Blue) {
+			ticket = new TicketMove(Blue, Underground, 89);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Underground, 185);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Underground, 140);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Bus, 187);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Bus, 199);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Bus, 135);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Bus, 142);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Bus, 161);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Taxi, 188);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Taxi, 142);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Taxi, 143);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Taxi, 160);
+			moves.add(ticket);
+			ticket = new TicketMove(Blue, Taxi, 172);
+			moves.add(ticket);
+		}
 		return moves;
 	}
 
