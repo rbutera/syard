@@ -148,6 +148,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	}
 
+	private int getRoundsRemaining() {
+	    return mRounds.size() - mCurrentRound;
+    }
+
 
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
 		// Result
@@ -174,7 +178,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			Integer dest = destination.value();
 			ticket = Ticket.fromTransport(transport);
 			Boolean canSecret = colour == Black && player.hasTickets(Ticket.fromTransport(Boat));
-			Boolean canDouble = colour == Black && player.hasTickets(Ticket.Double);
+			Boolean canDouble = colour == Black && player.hasTickets(Ticket.Double) && getRoundsRemaining() >= 2;
 
 			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(dest)) {
 				TicketMove move = new TicketMove(colour, ticket, dest);
