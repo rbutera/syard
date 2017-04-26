@@ -156,6 +156,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		Colour colour = player.colour();
 		int location = player.location();
 
+		// Get currently occupied spaces to prevent offering collision-inducing moves
+		ArrayList<Integer> occupied = new ArrayList();
+        for (ScotlandYardPlayer p:
+             mScotlandYardPlayers) {
+            occupied.add(p.location());
+        }
+
 		// get the tickets of the player
 		// get edges from graph
 		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(location));
@@ -163,9 +170,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		for (Edge<Integer, Transport> edge : options) {
 			Transport transport = edge.data();
 			Node<Integer> destination = edge.destination();
+			Integer dest = destination.value();
 			ticket = Ticket.fromTransport(transport);
-			if (player.hasTickets(ticket)) {
-				TicketMove move = new TicketMove(colour, ticket, destination.value());
+			if (player.hasTickets(ticket) && !occupied.contains(dest)) {
+				TicketMove move = new TicketMove(colour, ticket, dest);
 				moves.add(move);
 			}
 		}
