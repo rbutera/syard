@@ -195,8 +195,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 						Integer sDest = secondDestination.value();
 						Ticket sTicket = Ticket.fromTransport(secondTransport);
 
-						if (!occupied.contains(sDest) || sDest == location) {
-                            DoubleMove doubleMove = new DoubleMove(colour, ticket, dest, sTicket, sDest);
+						if (!occupied.contains(sDest) || sDest == location && player.hasTickets(sTicket)) {
+						    DoubleMove doubleMove;
+                            boolean valid = ticket == sTicket ? player.hasTickets(ticket, 2) : true;
+
+                            if (valid) {
+                                doubleMove = new DoubleMove(colour, ticket, dest, sTicket, sDest);
+                                moves.add(doubleMove);
+                            }
+
                             if (canSecret) {
                                 // add moves for use of a secret ticket first
                                 DoubleMove doubleSecretFirstMove = new DoubleMove(colour, ticket.fromTransport(Boat), dest, sTicket, sDest);
@@ -210,7 +217,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                                     moves.add(doubleSecretCombo);
                                 }
                             }
-                            moves.add(doubleMove);
                         }
 					}
 				}
