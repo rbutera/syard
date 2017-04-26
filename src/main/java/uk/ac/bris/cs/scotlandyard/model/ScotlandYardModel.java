@@ -160,8 +160,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		// get edges from graph
 		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(location));
 
-		// TODO: handle colour logic?
-
 		for (Edge<Integer, Transport> edge : options) {
 			Transport transport = edge.data();
 			Node<Integer> destination = edge.destination();
@@ -172,6 +170,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			}
 		}
 
+		if (moves.isEmpty()) {
+		    moves.add(new PassMove(colour));
+        }
 		return moves;
 	}
 
