@@ -174,6 +174,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			Integer dest = destination.value();
 			ticket = Ticket.fromTransport(transport);
 			Boolean canSecret = colour == Black && player.hasTickets(Ticket.fromTransport(Boat));
+			Boolean canDouble = colour == Black && player.hasTickets(Ticket.Double);
 
 			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(dest)) {
 				TicketMove move = new TicketMove(colour, ticket, dest);
@@ -183,7 +184,37 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                     TicketMove secretMove = new TicketMove(colour, Ticket.fromTransport(Boat), dest);
                     moves.add(secretMove);
                 }
-			}
+
+				if (canDouble) {
+                	// generate collection of double-turn tickets (edges)
+					Collection<Edge<Integer, Transport>> moreOptions = mGraph.getEdgesFrom(mGraph.getNode(dest));
+
+					for (Edge<Integer, Transport> secondEdge : moreOptions) {
+						Transport secondTransport = secondEdge.data();
+						Node<Integer> secondDestination = secondEdge.destination();
+						Integer sDest = secondDestination.value();
+						Ticket sTicket = Ticket.fromTransport(secondTransport);
+
+						if (!occupied.contains(sDest) || sDest == location) {
+                            DoubleMove doubleMove = new DoubleMove(colour, ticket, dest, sTicket, sDest);
+                            if (canSecret) {
+                                // add moves for use of a secret ticket first
+                                DoubleMove doubleSecretFirstMove = new DoubleMove(colour, ticket.fromTransport(Boat), dest, sTicket, sDest);
+                                moves.add(doubleSecretFirstMove);
+                                // add moves for use of a secret ticket second
+                                DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, dest, ticket.fromTransport(Boat), sDest);
+                                moves.add(doubleSecretSecondMove);
+                                // add moves for use of two secret tickets
+                                if (player.hasTickets(ticket.fromTransport(Boat), 2)) {
+                                    DoubleMove doubleSecretCombo = new DoubleMove(colour, ticket.fromTransport(Boat), dest, ticket.fromTransport(Boat), sDest);
+                                    moves.add(doubleSecretCombo);
+                                }
+                            }
+                            moves.add(doubleMove);
+                        }
+					}
+				}
+ 			}
 		}
 
 		if (moves.isEmpty()) {
