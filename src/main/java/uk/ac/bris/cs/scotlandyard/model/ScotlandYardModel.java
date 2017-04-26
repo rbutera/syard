@@ -6,6 +6,7 @@ import static uk.ac.bris.cs.scotlandyard.model.Colour.Blue;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.Bus;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.Taxi;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.Underground;
+import static uk.ac.bris.cs.scotlandyard.model.Transport.Boat;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -172,9 +173,16 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			Node<Integer> destination = edge.destination();
 			Integer dest = destination.value();
 			ticket = Ticket.fromTransport(transport);
-			if (player.hasTickets(ticket) && !occupied.contains(dest)) {
+			Boolean canSecret = colour == Black && player.hasTickets(Ticket.fromTransport(Boat));
+
+			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(dest)) {
 				TicketMove move = new TicketMove(colour, ticket, dest);
-				moves.add(move);
+                moves.add(move);
+
+                if (canSecret) {
+                    TicketMove secretMove = new TicketMove(colour, Ticket.fromTransport(Boat), dest);
+                    moves.add(secretMove);
+                }
 			}
 		}
 
