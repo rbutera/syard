@@ -16,18 +16,20 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import uk.ac.bris.cs.gamekit.graph.Graph;
+import uk.ac.bris.cs.gamekit.graph.Edge;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
+import uk.ac.bris.cs.gamekit.graph.Node;
+
 
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
-	public List<Boolean> mRounds;
-	public Graph<Integer, Transport> mGraph;
-	public ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
-	public int mCurrentRound = 0;
-	public int mCurrentTurn = 0;
-	public int mTotalPlayers = 0;
-	public ArrayList<PlayerConfiguration> mConfigurations;
+	private final List<Boolean> mRounds;
+	private final Graph<Integer, Transport> mGraph;
+	private ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
+	private int mCurrentRound = 0;
+	private int mTotalPlayers = 0;
+	private final ArrayList<PlayerConfiguration> mConfigurations;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
 		if (rounds == null || rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
@@ -145,44 +147,30 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	}
 
+
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
+		// Result
 		Set<Move> moves = new HashSet<Move>();
 
-		TicketMove ticket;
-		if (player.colour() == Black) {
-			ticket = new TicketMove(Black, Taxi, 86);
-			moves.add(ticket);
+		Ticket ticket;
+		Colour colour = player.colour();
+
+		// get the tickets of the player
+		// get edges from graph
+		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(player.location()));
+
+		for (Edge<Integer, Transport> edge : options) {
+			Transport transport = edge.data();
+			Node<Integer> destination = edge.destination();
+			ticket = Ticket.fromTransport(transport);
+			TicketMove move = new TicketMove(colour, ticket, destination.value());
+			moves.add(move);
 		}
-		if (player.colour() == Blue) {
-			ticket = new TicketMove(Blue, Underground, 89);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Underground, 185);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Underground, 140);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Bus, 187);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Bus, 199);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Bus, 135);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Bus, 142);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Bus, 161);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Taxi, 188);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Taxi, 142);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Taxi, 143);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Taxi, 160);
-			moves.add(ticket);
-			ticket = new TicketMove(Blue, Taxi, 172);
-			moves.add(ticket);
-		}
+
 		return moves;
 	}
+
+
 
 	@Override
 	public Collection<Spectator> getSpectators() {
