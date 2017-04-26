@@ -154,17 +154,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		Ticket ticket;
 		Colour colour = player.colour();
+		int location = player.location();
 
 		// get the tickets of the player
 		// get edges from graph
-		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(player.location()));
+		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(location));
+
+		// TODO: handle colour logic?
 
 		for (Edge<Integer, Transport> edge : options) {
 			Transport transport = edge.data();
 			Node<Integer> destination = edge.destination();
 			ticket = Ticket.fromTransport(transport);
-			TicketMove move = new TicketMove(colour, ticket, destination.value());
-			moves.add(move);
+			if (player.hasTickets(ticket)) {
+				TicketMove move = new TicketMove(colour, ticket, destination.value());
+				moves.add(move);
+			}
 		}
 
 		return moves;
