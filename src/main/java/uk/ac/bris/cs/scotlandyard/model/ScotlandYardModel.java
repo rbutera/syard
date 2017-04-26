@@ -109,13 +109,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public void registerSpectator(Spectator spectator) {
 		// TODO
-		throw new RuntimeException("Implement me");
+		// throw new RuntimeException("Implement me");
 	}
 
 	@Override
 	public void unregisterSpectator(Spectator spectator) {
 		// TODO
-		throw new RuntimeException("Implement me");
+		// throw new RuntimeException("Implement me");
 	}
 
     @Override
