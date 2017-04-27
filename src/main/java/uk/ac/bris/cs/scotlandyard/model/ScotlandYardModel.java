@@ -116,19 +116,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				mCurrentRound = NOT_STARTED;
 	}
 
-    @Override
-    public void accept(Move move) {
-        // do something with the Move the current Player wants to play
-        requireNonNull(move);
-        ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
-        Set<Move> valid = getValidMoves(player);
-        if (valid.contains(move)){
-			processMove(player, move);
-		} else {
-        	throw new IllegalArgumentException("Illegal move passed to callback");
-		}
-    }
-
     private ScotlandYardPlayer getPlayerInstanceByColour (Colour colour){
 	    requireNonNull(colour);
 	    ScotlandYardPlayer p = null;
@@ -183,7 +170,30 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private void requestMove(ScotlandYardPlayer player) {
         requireNonNull(player);
         Set<Move> moves = getValidMoves(player);
+
+        // Notify spectators
+        for (Spectator spectator : getSpectators()) {
+            spectator.onRoundStarted(this, getCurrentRound());
+        }
         player.player().makeMove(this, player.location(), moves, this);
+    }
+
+    @Override
+    public void accept(Move move) {
+        requireNonNull(move);
+
+        // Notify spectators
+        for (Spectator spectator : getSpectators()) {
+            spectator.onMoveMade(this, move);
+        }
+
+        ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
+        Set<Move> valid = getValidMoves(player);
+        if (valid.contains(move)){
+            processMove(player, move);
+        } else {
+            throw new IllegalArgumentException("Illegal move passed to callback");
+        }
     }
 
     @Override
@@ -446,7 +456,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return new ImmutableGraph<>(mGraph);
 	}
 
+	/// SPECTATORS
+
 	private List<Spectator> mSpectators = new ArrayList<>();
+    // Refer to:
+    // https://www.ole.bris.ac.uk/bbcswebdav/courses/COMS10001_2016/students/model/index.html#Game_sequence
+    // for order of spectator notifications
 
     @Override
     public Collection<Spectator> getSpectators() {
