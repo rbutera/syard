@@ -212,28 +212,33 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
 		// Result
-		Set<Move> moves = new HashSet<Move>();
+		Set<Move> moves = new HashSet<>();
 
-		Ticket ticket;
 		Colour colour = player.colour();
 		int location = player.location();
 
-		// Get currently occupied spaces to prevent offering collision-inducing moves
+		// get currently occupied spaces to prevent offering collision-inducing moves
         ArrayList<Integer> occupied = getOccupiedLocations();
 
-
-		// get the tickets of the player
-		// get edges from graph
+		// use the node of the player's current location to find potential move options
 		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(location));
 
+		// iterate through the potential move options and add ones considered valid
 		for (Edge<Integer, Transport> edge : options) {
+		    // extract the current edge's transport and destination node
 			Transport transport = edge.data();
 			Node<Integer> destinationNode = edge.destination();
+
+			// extract the destination value from the destination node of this edge
 			Integer destination = destinationNode.value();
-			ticket = Ticket.fromTransport(transport);
+			// extract the ticket from the given transport of this edge
+			Ticket ticket = Ticket.fromTransport(transport);
+
+			// enable special flags for Mr. X
 			Boolean canSecret = colour.isMrX() && player.hasTickets(Secret);
 			Boolean canDouble = colour.isMrX() && player.hasTickets(Double) && getRoundsRemaining() >= 2;
 
+			// TODO: refactor the repetitive code here
 			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
 				TicketMove move = new TicketMove(colour, ticket, destination);
                 moves.add(move);
@@ -254,11 +259,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 						Ticket secondTicket = Ticket.fromTransport(secondTransport);
 
 						if (!occupied.contains(secondDestination) || secondDestination == location && player.hasTickets(secondTicket)) {
-						    DoubleMove doubleMove;
-                            boolean valid = ticket != secondTicket || player.hasTickets(ticket, 2);
-
-                            if (valid) {
-                                doubleMove = new DoubleMove(colour, ticket, destination, secondTicket, secondDestination);
+                            if (ticket != secondTicket || player.hasTickets(ticket, 2)) {
+                                DoubleMove doubleMove = new DoubleMove(colour, ticket, destination, secondTicket, secondDestination);
                                 moves.add(doubleMove);
                             }
 
@@ -266,9 +268,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                                 // add moves for use of a secret ticket first
                                 DoubleMove doubleSecretFirstMove = new DoubleMove(colour, Secret, destination, secondTicket, secondDestination);
                                 moves.add(doubleSecretFirstMove);
+
                                 // add moves for use of a secret ticket second
                                 DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, destination, Secret, secondDestination);
                                 moves.add(doubleSecretSecondMove);
+
                                 // add moves for use of two secret tickets
                                 if (player.hasTickets(Secret, 2)) {
                                     DoubleMove doubleSecretCombo = new DoubleMove(colour, Secret, destination, Secret, secondDestination);
@@ -324,6 +328,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 			return mLastRevealedBlack;
 		}
+
 		return getPlayerInstanceByColour(colour).location();
 	}
 
@@ -334,8 +339,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				return player.tickets().get(ticket);
 			}
 		}
+
 		return 0;
 	}
+
     private boolean allDetectivesAreTicketless() {
         for (ScotlandYardPlayer player : mScotlandYardPlayers) {
             if (player.colour().isDetective()) {
@@ -346,15 +353,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                 if (player.hasTickets(Secret)) return false;
             }
         }
+
         return true;
     }
 
-	private boolean allDetectivesAreStuck() {
+	private boolean noDetectivesHaveValidMoves() {
         boolean result = true;
+
         for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-            Set<Move> moves = getValidMoves(player);
-            result &= moves.isEmpty(); // if this is false once, then at least one Detective isn't stuck
+            PassMove playerPassMove = new PassMove(player.colour());
+            result &= getValidMoves(player).contains(playerPassMove); // if this is false once, then at least one Detective isn't stuck
         }
+
         return result;
     }
 
@@ -366,15 +376,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return getPlayerInstanceByColour(Black);
     }
 
-    private boolean mrXIsStuck(){
-        Set<Move> mrXMoves = getValidMoves(getMrX());
-        return mrXMoves.isEmpty();
+    private boolean mrXHasNoValidMoves(){
+        PassMove mrXPassMove = new PassMove(Black);
+        return getValidMoves(getMrX()).contains(mrXPassMove);
     }
 
     private boolean mrXIsCaptured() {
         boolean result = false;
-        ScotlandYardPlayer mrX = getMrX();
 
+        ScotlandYardPlayer mrX = getMrX();
         for (ScotlandYardPlayer player : mScotlandYardPlayers) {
             result |= player.location() == mrX.location()
                     && !player.colour().isMrX(); // if this is true once, then Mr. X has been captured
@@ -398,14 +408,16 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         mWinners = new HashSet<>();
 
         // MR.X WINS
-        if (allDetectivesAreTicketless() || allDetectivesAreStuck() || allRoundsAreUsedUp()) {
+        if (allDetectivesAreTicketless() || noDetectivesHaveValidMoves() || allRoundsAreUsedUp()) {
             mrXWins = true;
+
             mWinners.add(Black);
         }
 
         // DETECTIVES WIN
-        if (mrXIsStuck() || mrXIsCaptured()){
+        if (mrXHasNoValidMoves() || mrXIsCaptured()){
             detectivesWin = true;
+
             for (ScotlandYardPlayer player : mScotlandYardPlayers) {
                 if (player.isDetective()) {
                     mWinners.add(player.colour());
