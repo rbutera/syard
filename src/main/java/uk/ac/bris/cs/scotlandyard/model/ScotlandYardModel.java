@@ -130,37 +130,46 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
 	private void goNextPlayer(){
-		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
-			mCurrentRoundTurnsPlayed = 0;
-		} else {
-			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-		}
-		mTotalTurnsPlayed++;
+        if (!isGameOver()) {
+            if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
+                mCurrentRoundTurnsPlayed = 0;
+            } else {
+                requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+            }
+            mTotalTurnsPlayed++;
+        }
 	}
 
     private void processMove(ScotlandYardPlayer player, Move move) {
 	    if (move instanceof TicketMove) {
 	        TicketMove ticketMove = (TicketMove) move;
             player.location(ticketMove.destination());
+
             // modify player's tickets
             player.removeTicket(ticketMove.ticket());
+
             if (player.colour().isDetective()) {
             	getPlayerInstanceByColour(Black).addTicket(ticketMove.ticket());
 			}
+
             // recalculate occupied spaces
             getOccupiedLocations();
+
             goNextPlayer();
         } else if (move instanceof PassMove) { // pass moves
 	    	goNextPlayer();
 		} else if (move instanceof DoubleMove) {
 			DoubleMove doubleMove = (DoubleMove) move;
 			player.location(doubleMove.secondMove().destination());
+
 			// modify player's tickets
 			player.removeTicket(Ticket.Double);
 			player.removeTicket(doubleMove.firstMove().ticket());
-			player.removeTicket(doubleMove.secondMove().ticket());
+            player.removeTicket(doubleMove.secondMove().ticket());
+
 			// recalculate occupied spaces
 			getOccupiedLocations();
+
 			goNextPlayer();
 		} else {
 	    	throw new IllegalArgumentException("Illegal move");
@@ -430,6 +439,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                 if (player.isDetective()) {
                     mWinners.add(player.colour());
                 }
+            }
+        }
+
+        if (!mWinners.isEmpty()) {
+            // Notify spectators
+            for (Spectator spectator : getSpectators()) {
+                spectator.onGameOver(this, mWinners);
             }
         }
 
