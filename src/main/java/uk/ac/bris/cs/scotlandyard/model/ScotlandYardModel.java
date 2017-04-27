@@ -177,6 +177,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			DoubleMove dm = (DoubleMove) move;
 			player.location(dm.secondMove().destination());
 			// modify player's tickets
+			player.removeTicket(Ticket.Double);
 			player.removeTicket(dm.firstMove().ticket());
 			player.removeTicket(dm.secondMove().ticket());
 			// recalculate occupied spaces
