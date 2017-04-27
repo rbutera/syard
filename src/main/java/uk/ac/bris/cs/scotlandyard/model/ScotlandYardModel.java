@@ -316,6 +316,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private int updateLastRevealed () {
+		hasBeenRevealed = true;
 		mLastRevealedBlack = getPlayerInstanceByColour(Black).location();
 		return mLastRevealedBlack;
 	}
@@ -325,10 +326,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		if (colour == Black) {
 			if (hasBeenRevealed && isRevealRound()) {
 				updateLastRevealed();
-			} else if (!hasBeenRevealed && (mTotalTurnsPlayed != 0 && mTotalTurnsPlayed < getRounds().size() && getRounds().get(mTotalTurnsPlayed))){
-				updateLastRevealed();
+			} else if (!hasBeenRevealed){
+				if((mTotalTurnsPlayed != 0 && mCurrentRound > 0 && mCurrentRound < getRounds().size() && getRounds().get(mCurrentRound))){
+					updateLastRevealed();
+				}
+				hasBeenRevealed = true;
 			}
-			hasBeenRevealed = true;
 
 			return mLastRevealedBlack;
 		}
