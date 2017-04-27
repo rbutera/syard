@@ -148,6 +148,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         }
     }
 
+    private void requestMove(ScotlandYardPlayer player) {
+        Set<Move> moves = getValidMoves(player);
+        player.player().makeMove(this, player.location(), moves, this);
+    }
+
     @Override
 	public void startRotate() {
 		// TODO: Complete this method
@@ -166,9 +171,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		for (ScotlandYardPlayer player: mScotlandYardPlayers) {
 			currentPlayer = player;
-			moves = getValidMoves(currentPlayer);
-			currentPlayer.player().makeMove(this, currentPlayer.location(), moves, this);
-
+			requestMove(currentPlayer);
             if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
                 mCurrentRoundTurnsPlayed = 0;
             }
