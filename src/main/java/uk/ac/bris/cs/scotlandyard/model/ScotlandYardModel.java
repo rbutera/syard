@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.apache.commons.lang3.ObjectUtils;
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.Edge;
@@ -126,14 +127,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         // do something with the Move the current Player wants to play
         requireNonNull(move);
 
-        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-            if (move.colour() == player.colour()) {
-                // update the player's current location to the selected move's destination
-                processMove(player, move);
-            }
-        }
+        processMove(getPlayerInstanceByColour(move.colour()), move);
 
         System.out.println(move);
+    }
+
+    private ScotlandYardPlayer getPlayerInstanceByColour (Colour colour){
+	    requireNonNull(colour);
+	    ScotlandYardPlayer p = null;
+        for (ScotlandYardPlayer player :
+                mScotlandYardPlayers)
+            if (player.colour() == colour) p = player;
+
+        if (p == null){
+            throw new IllegalArgumentException("Could not find player for colour");
+        }
+        return p;
     }
 
 
@@ -145,10 +154,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             player.removeTicket(tm.ticket());
             // recalculate occupied spaces
             getOccupiedLocations();
+
+            if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
+                mCurrentRoundTurnsPlayed = 0;
+            } else {
+                requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+            }
         }
     }
 
     private void requestMove(ScotlandYardPlayer player) {
+        requireNonNull(player);
         Set<Move> moves = getValidMoves(player);
         player.player().makeMove(this, player.location(), moves, this);
     }
@@ -169,13 +185,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			System.out.println(move);
 		};*/
 
-		for (ScotlandYardPlayer player: mScotlandYardPlayers) {
-			currentPlayer = player;
-			requestMove(currentPlayer);
-            if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
-                mCurrentRoundTurnsPlayed = 0;
-            }
-		}
+		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 
 	}
 
@@ -239,7 +249,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 						if (!occupied.contains(sDest) || sDest == location && player.hasTickets(sTicket)) {
 						    DoubleMove doubleMove;
-                            boolean valid = ticket == sTicket ? player.hasTickets(ticket, 2) : true;
+                            boolean valid = ticket != sTicket || player.hasTickets(ticket, 2);
 
                             if (valid) {
                                 doubleMove = new DoubleMove(colour, ticket, dest, sTicket, sDest);
@@ -248,14 +258,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
                             if (canSecret) {
                                 // add moves for use of a secret ticket first
-                                DoubleMove doubleSecretFirstMove = new DoubleMove(colour, ticket.fromTransport(Boat), dest, sTicket, sDest);
+                                DoubleMove doubleSecretFirstMove = new DoubleMove(colour, Ticket.fromTransport(Boat), dest, sTicket, sDest);
                                 moves.add(doubleSecretFirstMove);
                                 // add moves for use of a secret ticket second
-                                DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, dest, ticket.fromTransport(Boat), sDest);
+                                DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, dest, Ticket.fromTransport(Boat), sDest);
                                 moves.add(doubleSecretSecondMove);
                                 // add moves for use of two secret tickets
-                                if (player.hasTickets(ticket.fromTransport(Boat), 2)) {
-                                    DoubleMove doubleSecretCombo = new DoubleMove(colour, ticket.fromTransport(Boat), dest, ticket.fromTransport(Boat), sDest);
+                                if (player.hasTickets(Ticket.fromTransport(Boat), 2)) {
+                                    DoubleMove doubleSecretCombo = new DoubleMove(colour, Ticket.fromTransport(Boat), dest, Ticket.fromTransport(Boat), sDest);
                                     moves.add(doubleSecretCombo);
                                 }
                             }
@@ -322,7 +332,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
+        return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
 	}
 
 	@Override
