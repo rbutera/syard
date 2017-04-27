@@ -33,6 +33,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mCurrentRound = 0;
 	private int mCurrentRoundTurnsPlayed = 0;
 	private int mTotalPlayers = 0;
+	private int mTotalTurnsPlayed = 0;
 	private boolean hasBeenRevealed = false;
     private ArrayList<Integer> mOccupied;
 	private final ArrayList<PlayerConfiguration> mConfigurations;
@@ -134,8 +135,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		} else {
         	throw new IllegalArgumentException("Illegal move passed to callback");
 		}
-
-        System.out.println(move);
     }
 
     private ScotlandYardPlayer getPlayerInstanceByColour (Colour colour){
@@ -157,10 +156,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		} else {
 			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 		}
+		mTotalTurnsPlayed++;
 	}
 
     private void processMove(ScotlandYardPlayer player, Move move) {
-
 	    if (move instanceof TicketMove) {
 	        TicketMove tm = (TicketMove) move;
             player.location(tm.destination());
@@ -315,11 +314,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return Collections.unmodifiableSet(Collections.<Colour>emptySet());
 	}
 
+	private int updateLastRevealed () {
+		mLastRevealedBlack = getPlayerInstanceByColour(Black).location();
+		return mLastRevealedBlack;
+	}
+
 	@Override
 	public int getPlayerLocation(Colour colour) {
 		if (colour == Black) {
 			if (hasBeenRevealed && isRevealRound()) {
-				mLastRevealedBlack = getPlayerInstanceByColour(colour).location();
+				updateLastRevealed();
+			} else if (!hasBeenRevealed && mTotalTurnsPlayed != 0 && getRounds().get(mTotalTurnsPlayed)){
+				updateLastRevealed();
 			}
 			hasBeenRevealed = true;
 
@@ -357,6 +363,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public boolean isRevealRound() {
 		return getRounds().get(getCurrentRound() - 1);
+		// ONE SEC - SWITCHING TO PC MIC
 	}
 
 	@Override
