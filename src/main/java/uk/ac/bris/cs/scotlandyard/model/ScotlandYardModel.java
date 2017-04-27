@@ -350,8 +350,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public boolean isGameOver() {
-		// TODO: Revisit this later
-		return false;
+	    boolean result = false;
+		// can detectives still move
+        // -- run out of tickets?
+        // -- run out of usable tickets given their location?
+        // is Mr.X encircled?
+        // has Mr.X been caught
+        // all rounds used up?
+        if (mCurrentRound == mRounds.size()) {
+            result = true;
+        }
+
+		return result;
 	}
 
 	@Override
