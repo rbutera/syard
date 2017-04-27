@@ -204,6 +204,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		mCurrentRound++;
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+
+        // Notify spectators
+        for (Spectator spectator : getSpectators()) {
+            spectator.onRotationComplete(this);
+        }
 	}
 
 	private int getRoundsRemaining() {
