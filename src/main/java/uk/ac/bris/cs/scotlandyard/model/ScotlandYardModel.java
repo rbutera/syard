@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.apache.commons.lang3.ObjectUtils;
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.Edge;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
@@ -36,12 +37,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     ScotlandYardPlayer currentPlayer;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
-		if (rounds == null || rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
+		if (rounds == null){throw new NullPointerException();}
+        if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
 		return requireNonNull(rounds);
 	}
 
 	private Graph<Integer, Transport> validateGraph(Graph<Integer, Transport> graph) {
-		if (graph == null || graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
+		if (graph == null) {throw new NullPointerException();}
+		if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
 		return requireNonNull(graph);
 	}
 
@@ -180,7 +183,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private ArrayList<Integer> getOccupiedLocations() {
 	    mOccupied = new ArrayList();
         for (ScotlandYardPlayer p: mScotlandYardPlayers) {
-            mOccupied.add(p.location());
+            if(p.colour() != Colour.Black) {
+                mOccupied.add(p.location());
+            }
         }
         return mOccupied;
     }
@@ -314,7 +319,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return currentPlayer.colour();
+		return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
 	}
 
 	@Override
