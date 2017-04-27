@@ -325,7 +325,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		if (colour == Black) {
 			if (hasBeenRevealed && isRevealRound()) {
 				updateLastRevealed();
-			} else if (!hasBeenRevealed && mTotalTurnsPlayed != 0 && getRounds().get(mTotalTurnsPlayed)){
+			} else if (!hasBeenRevealed && (mTotalTurnsPlayed != 0 && mTotalTurnsPlayed < getRounds().size() && getRounds().get(mTotalTurnsPlayed))){
 				updateLastRevealed();
 			}
 			hasBeenRevealed = true;
