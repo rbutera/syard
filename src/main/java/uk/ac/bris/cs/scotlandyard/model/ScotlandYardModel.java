@@ -33,9 +33,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mCurrentRound = 0;
 	private int mCurrentRoundTurnsPlayed = 0;
 	private int mTotalPlayers = 0;
+	private boolean hasBeenRevealed = false;
     private ArrayList<Integer> mOccupied;
 	private final ArrayList<PlayerConfiguration> mConfigurations;
-    ScotlandYardPlayer currentPlayer;
+    private int mLastRevealedBlack = 0;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
 		if (rounds == null){throw new NullPointerException();}
@@ -191,16 +192,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
 	public void startRotate() {
-		// TODO: Complete this method
-
-		// Before Mr.X makes a move, the round number increments once so that Mr. X will start on the first round.
-		// pick the correct player
-		// provide a current set of valid moves to player.makeMove
-		// notify the player to play a move (pass an empty list of Move)
-
 		mCurrentRound++;
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-
 	}
 
 	private int getRoundsRemaining() {
@@ -320,12 +313,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getPlayerLocation(Colour colour) {
-		if (!colour.isMrX()) {
-			for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
-				if (currentplayer.colour() == colour) {return currentplayer.location();}
+		if (colour == Black) {
+			if (hasBeenRevealed && isRevealRound()) {
+				mLastRevealedBlack = getPlayerInstanceByColour(colour).location();
 			}
+			hasBeenRevealed = true;
+
+			return mLastRevealedBlack;
 		}
-		return 0;
+		return getPlayerInstanceByColour(colour).location();
 	}
 
 	@Override
@@ -356,7 +352,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public boolean isRevealRound() {
-		return getRounds().get(mCurrentRound - 1);
+		return getRounds().get(getCurrentRound() - 1);
 	}
 
 	@Override
@@ -369,10 +365,4 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return new ImmutableGraph<Integer, Transport>(mGraph);
 	}
 
-
-
-    @Override
-    public Consumer<Move> andThen(Consumer<? super Move> after) {
-        return null;
-    }
 }
