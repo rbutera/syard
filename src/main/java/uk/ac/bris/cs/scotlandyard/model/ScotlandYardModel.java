@@ -354,14 +354,32 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		// can detectives still move
         // -- run out of tickets?
         // -- run out of usable tickets given their location?
-        // is Mr.X encircled?
-        // has Mr.X been caught
-        // all rounds used up?
-        if (mCurrentRound == mRounds.size()) {
-            result = true;
+        boolean winConditionTicketsDepleted = true;
+        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+            if (!player.colour().isMrX()) {
+                winConditionTicketsDepleted &= !(player.tickets().size() > 0);
+            }
         }
 
-		return result;
+        boolean winConditionUsableTicketsDepleted = true;
+
+        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+            if (!player.colour().isMrX()) {
+                Set<Move> moves = getValidMoves(player);
+                winConditionUsableTicketsDepleted &= moves.isEmpty();
+            }
+        }
+
+        // is Mr.X cornered?
+        // has Mr.X been captured?
+
+        // all rounds used up?
+        boolean winConditionAllRoundsUsedUp = mCurrentRound == mRounds.size();
+
+		return result ||
+                winConditionTicketsDepleted ||
+                winConditionAllRoundsUsedUp ||
+                winConditionUsableTicketsDepleted;
 	}
 
 	@Override
