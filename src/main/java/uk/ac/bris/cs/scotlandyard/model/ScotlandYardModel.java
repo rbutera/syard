@@ -34,20 +34,26 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private int mLastRevealedBlack = 0;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
-		if (rounds == null){throw new NullPointerException();}
-        if (rounds.isEmpty()) {throw new IllegalArgumentException("Empty rounds");}
-		return requireNonNull(rounds);
+        requireNonNull(rounds);
+        if (rounds.isEmpty()) {
+		    throw new IllegalArgumentException("Empty rounds");
+		}
+		return rounds;
 	}
 
 	private Graph<Integer, Transport> validateGraph(Graph<Integer, Transport> graph) {
-		if (graph == null) {throw new NullPointerException();}
-		if (graph.isEmpty()) {throw new IllegalArgumentException("Empty graph");}
-		return requireNonNull(graph);
+		requireNonNull(graph);
+		if (graph.isEmpty()) {
+		    throw new IllegalArgumentException("Empty graph");
+		}
+		return graph;
 	}
 
 
 	private ArrayList<PlayerConfiguration> configurePlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
-		if (mrX.colour != Black) {throw new IllegalArgumentException("MrX should be Black");}
+		if (mrX.colour != Black) {
+		    throw new IllegalArgumentException("MrX should be Black");
+		}
 		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 		configurations.add(requireNonNull(mrX));
 		configurations.add(requireNonNull(firstDetective));
@@ -71,11 +77,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 				for (PlayerConfiguration config : mConfigurations) {
 					// prevent duplicate locations
-					if (setConfigLocations.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
+					if (setConfigLocations.contains(config.location)) {
+					    throw new IllegalArgumentException("Duplicate location");
+					}
 					setConfigLocations.add(config.location);
 
 					// prevent duplicate colours
-					if (setConfigColours.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
+					if (setConfigColours.contains(config.colour)) {
+					    throw new IllegalArgumentException("Duplicate colour");
+					}
 					setConfigColours.add(config.colour);
 
 					// ensure mapping for each Ticket exists
@@ -104,18 +114,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 				// at initialisation, the rounds have not started
 				mCurrentRound = NOT_STARTED;
-	}
-
-	@Override
-	public void registerSpectator(Spectator spectator) {
-		// TODO
-		// throw new RuntimeException("Implement me");
-	}
-
-	@Override
-	public void unregisterSpectator(Spectator spectator) {
-		// TODO
-		// throw new RuntimeException("Implement me");
 	}
 
     @Override
@@ -190,7 +188,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
 	public void startRotate() {
-	    if (isGameOver()) throw new IllegalStateException("Game's already over");
+	    if (isGameOver()) {
+	        throw new IllegalStateException("Game's already over");
+        }
+
 		mCurrentRound++;
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 	}
@@ -289,14 +290,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		    moves.add(new PassMove(colour));
         }
 		return moves;
-	}
-
-
-
-	@Override
-	public Collection<Spectator> getSpectators() {
-		// TODO
-		throw new RuntimeException("Implement me");
 	}
 
 	@Override
@@ -450,7 +443,40 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public Graph<Integer, Transport> getGraph() {
-		return new ImmutableGraph<Integer, Transport>(mGraph);
+		return new ImmutableGraph<>(mGraph);
 	}
+
+	private List<Spectator> mSpectators = new ArrayList<>();
+
+    @Override
+    public Collection<Spectator> getSpectators() {
+        // TODO: implement
+
+        return Collections.unmodifiableList(requireNonNull(mSpectators));
+    }
+
+    @Override
+    public void registerSpectator(Spectator spectator) {
+        // TODO: implement
+        requireNonNull(spectator);
+
+        if (mSpectators.contains(spectator)) {
+            throw new IllegalArgumentException("Spectator already registered");
+        }
+
+        mSpectators.add(spectator);
+    }
+
+    @Override
+    public void unregisterSpectator(Spectator spectator) {
+        // TODO: implement
+        requireNonNull(spectator);
+
+        if (!mSpectators.contains(spectator)) {
+            throw new IllegalArgumentException("Spectator has not been registered");
+        }
+
+        mSpectators.remove(spectator);
+    }
 
 }
