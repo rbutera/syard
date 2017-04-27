@@ -160,11 +160,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
     private void processMove(ScotlandYardPlayer player, Move move) {
+
 	    if (move instanceof TicketMove) {
 	        TicketMove tm = (TicketMove) move;
             player.location(tm.destination());
             // modify player's tickets
             player.removeTicket(tm.ticket());
+            if (!player.colour().isMrX()) {
+            	getPlayerInstanceByColour(Black).addTicket(tm.ticket());
+			}
             // recalculate occupied spaces
             getOccupiedLocations();
             goNextPlayer();
