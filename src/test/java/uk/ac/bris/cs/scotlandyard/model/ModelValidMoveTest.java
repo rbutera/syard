@@ -122,7 +122,8 @@ public class ModelValidMoveTest extends ModelTestBase {
 		doAnswer(chooseFirst())
 				.when(green.player).makeMove(any(), anyInt(), anySet(), any());
 
-		createGame(black, red, green).startRotate();
+		createGame(black, red, green)
+				.startRotate();
 		ArgumentCaptor<Set<Move>> movesCaptor = ArgumentCaptor.forClass(Set.class);
 		verify(green.player).makeMove(any(), anyInt(), movesCaptor.capture(), any());
 		// green can only move to 20 because 10 is blocked

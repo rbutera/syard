@@ -126,8 +126,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     public void accept(Move move) {
         // do something with the Move the current Player wants to play
         requireNonNull(move);
-
-        processMove(getPlayerInstanceByColour(move.colour()), move);
+        ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
+        Set<Move> valid = getValidMoves(player);
+        if (valid.contains(move)){
+			processMove(player, move);
+		} else {
+        	throw new IllegalArgumentException("Illegal move passed to callback");
+		}
 
         System.out.println(move);
     }
@@ -145,6 +150,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return p;
     }
 
+	private void goNextPlayer(){
+		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
+			mCurrentRoundTurnsPlayed = 0;
+		} else {
+			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+		}
+	}
 
     private void processMove(ScotlandYardPlayer player, Move move) {
 	    if (move instanceof TicketMove) {
@@ -154,13 +166,21 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             player.removeTicket(tm.ticket());
             // recalculate occupied spaces
             getOccupiedLocations();
-
-            if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
-                mCurrentRoundTurnsPlayed = 0;
-            } else {
-                requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-            }
-        }
+            goNextPlayer();
+        } else if (move instanceof PassMove) { // pass moves
+	    	goNextPlayer();
+		} else if (move instanceof DoubleMove) {
+			DoubleMove dm = (DoubleMove) move;
+			player.location(dm.secondMove().destination());
+			// modify player's tickets
+			player.removeTicket(dm.firstMove().ticket());
+			player.removeTicket(dm.secondMove().ticket());
+			// recalculate occupied spaces
+			getOccupiedLocations();
+			goNextPlayer();
+		} else {
+	    	throw new IllegalArgumentException("Illegal Move");
+		}
     }
 
     private void requestMove(ScotlandYardPlayer player) {
@@ -179,12 +199,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		// notify the player to play a move (pass an empty list of Move)
 
 		mCurrentRound++;
-		Set<Move> moves;
-
-		/*Consumer<Move> callback = (Move move) -> {
-			System.out.println(move);
-		};*/
-
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 
 	}
