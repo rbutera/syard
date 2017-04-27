@@ -2,11 +2,7 @@ package uk.ac.bris.cs.scotlandyard.model;
 
 import static java.util.Objects.requireNonNull;
 import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
-import static uk.ac.bris.cs.scotlandyard.model.Colour.Blue;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Bus;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Taxi;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Underground;
-import static uk.ac.bris.cs.scotlandyard.model.Transport.Boat;
+import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,8 +12,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
-import org.apache.commons.lang3.ObjectUtils;
 import uk.ac.bris.cs.gamekit.graph.Graph;
 import uk.ac.bris.cs.gamekit.graph.Edge;
 import uk.ac.bris.cs.gamekit.graph.ImmutableGraph;
@@ -72,34 +66,34 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				mGraph = validateGraph(graph);
 			 	mConfigurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
 
-				Set<Integer> locationsset = new HashSet<>();
-				Set<Colour> coloursset = new HashSet<>();
+				Set<Integer> setConfigLocations = new HashSet<>();
+				Set<Colour> setConfigColours = new HashSet<>();
 
 				for (PlayerConfiguration config : mConfigurations) {
 					// prevent duplicate locations
-					if (locationsset.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
-					locationsset.add(config.location);
+					if (setConfigLocations.contains(config.location)) {throw new IllegalArgumentException("Duplicate location");}
+					setConfigLocations.add(config.location);
 
 					// prevent duplicate colours
-					if (coloursset.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
-					coloursset.add(config.colour);
+					if (setConfigColours.contains(config.colour)) {throw new IllegalArgumentException("Duplicate colour");}
+					setConfigColours.add(config.colour);
 
 					// ensure mapping for each Ticket exists
-					if (!(config.tickets.containsKey(Ticket.Bus)
+					if (!(config.tickets.containsKey(Bus)
 					   && config.tickets.containsKey(Taxi)
-						 && config.tickets.containsKey(Ticket.Underground)
-				  	 && config.tickets.containsKey(Ticket.Double)
-					   && config.tickets.containsKey(Ticket.Secret))) {
+						 && config.tickets.containsKey(Underground)
+				  	 && config.tickets.containsKey(Double)
+					   && config.tickets.containsKey(Secret))) {
 							 throw new IllegalArgumentException("Player is missing a ticket type");
 					}
 
 					// prevent invalid tickets
-					if (!config.colour.isMrX() && (config.tickets.get(Ticket.Secret) != 0 || config.tickets.get(Ticket.Double) != 0)) {
+					if (!config.colour.isMrX() && (config.tickets.get(Secret) != 0 || config.tickets.get(Double) != 0)) {
 						throw new IllegalArgumentException("Detectives cannot have Secret or Double tickets");
 					}
 				}
 
-				// construct players
+				// populate mScotlandYardPlayers with ScotlandYardPlayers derived from mConfigurations
 				mScotlandYardPlayers = new ArrayList<ScotlandYardPlayer>();
 
 				for (PlayerConfiguration config : mConfigurations) {
@@ -109,7 +103,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				}
 
 				// at initialisation, the rounds have not started
-				mCurrentRound = ScotlandYardGame.NOT_STARTED;
+				mCurrentRound = NOT_STARTED;
 	}
 
 	@Override
@@ -161,12 +155,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     private void processMove(ScotlandYardPlayer player, Move move) {
 	    if (move instanceof TicketMove) {
-	        TicketMove tm = (TicketMove) move;
-            player.location(tm.destination());
+	        TicketMove ticketMove = (TicketMove) move;
+            player.location(ticketMove.destination());
             // modify player's tickets
-            player.removeTicket(tm.ticket());
-            if (!player.colour().isMrX()) {
-            	getPlayerInstanceByColour(Black).addTicket(tm.ticket());
+            player.removeTicket(ticketMove.ticket());
+            if (player.colour().isDetective()) {
+            	getPlayerInstanceByColour(Black).addTicket(ticketMove.ticket());
 			}
             // recalculate occupied spaces
             getOccupiedLocations();
@@ -174,17 +168,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         } else if (move instanceof PassMove) { // pass moves
 	    	goNextPlayer();
 		} else if (move instanceof DoubleMove) {
-			DoubleMove dm = (DoubleMove) move;
-			player.location(dm.secondMove().destination());
+			DoubleMove doubleMove = (DoubleMove) move;
+			player.location(doubleMove.secondMove().destination());
 			// modify player's tickets
 			player.removeTicket(Ticket.Double);
-			player.removeTicket(dm.firstMove().ticket());
-			player.removeTicket(dm.secondMove().ticket());
+			player.removeTicket(doubleMove.firstMove().ticket());
+			player.removeTicket(doubleMove.secondMove().ticket());
 			// recalculate occupied spaces
 			getOccupiedLocations();
 			goNextPlayer();
 		} else {
-	    	throw new IllegalArgumentException("Illegal Move");
+	    	throw new IllegalArgumentException("Illegal move");
 		}
     }
 
@@ -196,6 +190,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
 	public void startRotate() {
+	    if (isGameOver()) throw new IllegalStateException("Game's already over");
 		mCurrentRound++;
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 	}
@@ -207,7 +202,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private ArrayList<Integer> getOccupiedLocations() {
 	    mOccupied = new ArrayList();
         for (ScotlandYardPlayer p: mScotlandYardPlayers) {
-            if(p.colour() != Colour.Black) {
+            if(!p.colour().isMrX()) {
                 mOccupied.add(p.location());
             }
         }
@@ -233,50 +228,50 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		for (Edge<Integer, Transport> edge : options) {
 			Transport transport = edge.data();
-			Node<Integer> destination = edge.destination();
-			Integer dest = destination.value();
+			Node<Integer> destinationNode = edge.destination();
+			Integer destination = destinationNode.value();
 			ticket = Ticket.fromTransport(transport);
-			Boolean canSecret = colour == Black && player.hasTickets(Ticket.fromTransport(Boat));
-			Boolean canDouble = colour == Black && player.hasTickets(Ticket.Double) && getRoundsRemaining() >= 2;
+			Boolean canSecret = colour.isMrX() && player.hasTickets(Secret);
+			Boolean canDouble = colour.isMrX() && player.hasTickets(Double) && getRoundsRemaining() >= 2;
 
-			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(dest)) {
-				TicketMove move = new TicketMove(colour, ticket, dest);
+			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
+				TicketMove move = new TicketMove(colour, ticket, destination);
                 moves.add(move);
 
                 if (canSecret) {
-                    TicketMove secretMove = new TicketMove(colour, Ticket.fromTransport(Boat), dest);
+                    TicketMove secretMove = new TicketMove(colour, Secret, destination);
                     moves.add(secretMove);
                 }
 
 				if (canDouble) {
                 	// generate collection of double-turn tickets (edges)
-					Collection<Edge<Integer, Transport>> moreOptions = mGraph.getEdgesFrom(mGraph.getNode(dest));
+					Collection<Edge<Integer, Transport>> moreOptions = mGraph.getEdgesFrom(mGraph.getNode(destination));
 
 					for (Edge<Integer, Transport> secondEdge : moreOptions) {
 						Transport secondTransport = secondEdge.data();
-						Node<Integer> secondDestination = secondEdge.destination();
-						Integer sDest = secondDestination.value();
-						Ticket sTicket = Ticket.fromTransport(secondTransport);
+						Node<Integer> secondDestinationNode = secondEdge.destination();
+						Integer secondDestination = secondDestinationNode.value();
+						Ticket secondTicket = Ticket.fromTransport(secondTransport);
 
-						if (!occupied.contains(sDest) || sDest == location && player.hasTickets(sTicket)) {
+						if (!occupied.contains(secondDestination) || secondDestination == location && player.hasTickets(secondTicket)) {
 						    DoubleMove doubleMove;
-                            boolean valid = ticket != sTicket || player.hasTickets(ticket, 2);
+                            boolean valid = ticket != secondTicket || player.hasTickets(ticket, 2);
 
                             if (valid) {
-                                doubleMove = new DoubleMove(colour, ticket, dest, sTicket, sDest);
+                                doubleMove = new DoubleMove(colour, ticket, destination, secondTicket, secondDestination);
                                 moves.add(doubleMove);
                             }
 
                             if (canSecret) {
                                 // add moves for use of a secret ticket first
-                                DoubleMove doubleSecretFirstMove = new DoubleMove(colour, Ticket.fromTransport(Boat), dest, sTicket, sDest);
+                                DoubleMove doubleSecretFirstMove = new DoubleMove(colour, Secret, destination, secondTicket, secondDestination);
                                 moves.add(doubleSecretFirstMove);
                                 // add moves for use of a secret ticket second
-                                DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, dest, Ticket.fromTransport(Boat), sDest);
+                                DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, destination, Secret, secondDestination);
                                 moves.add(doubleSecretSecondMove);
                                 // add moves for use of two secret tickets
-                                if (player.hasTickets(Ticket.fromTransport(Boat), 2)) {
-                                    DoubleMove doubleSecretCombo = new DoubleMove(colour, Ticket.fromTransport(Boat), dest, Ticket.fromTransport(Boat), sDest);
+                                if (player.hasTickets(Secret, 2)) {
+                                    DoubleMove doubleSecretCombo = new DoubleMove(colour, Secret, destination, Secret, secondDestination);
                                     moves.add(doubleSecretCombo);
                                 }
                             }
@@ -303,16 +298,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public List<Colour> getPlayers() {
 		ArrayList<Colour> players = new ArrayList<Colour>();
-		for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
-			players.add(currentplayer.colour());
+		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+			players.add(player.colour());
 		}
 		return Collections.unmodifiableList(players);
-	}
-
-	@Override
-	public Set<Colour> getWinningPlayers() {
-		// TODO: Revisit this later
-		return Collections.unmodifiableSet(Collections.<Colour>emptySet());
 	}
 
 	private int updateLastRevealed () {
@@ -323,7 +312,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getPlayerLocation(Colour colour) {
-		if (colour == Black) {
+		if (colour.isMrX()) {
 			if (hasBeenRevealed && isRevealRound()) {
 				updateLastRevealed();
 			} else if (!hasBeenRevealed){
@@ -340,51 +329,96 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getPlayerTickets(Colour colour, Ticket ticket) {
-		for (ScotlandYardPlayer currentplayer : mScotlandYardPlayers) {
-			if (currentplayer.colour() == colour) {
-				return currentplayer.tickets().get(ticket);
+		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+			if (player.colour() == colour) {
+				return player.tickets().get(ticket);
 			}
 		}
 		return 0;
 	}
+    private boolean allDetectivesAreTicketless() {
+        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+            if (player.colour().isDetective()) {
+                if (player.hasTickets(Bus)) return false;
+                if (player.hasTickets(Taxi)) return false;
+                if (player.hasTickets(Underground)) return false;
+                if (player.hasTickets(Double)) return false;
+                if (player.hasTickets(Secret)) return false;
+            }
+        }
+        return true;
+    }
+
+	private boolean allDetectivesAreStuck() {
+        boolean result = true;
+        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+            Set<Move> moves = getValidMoves(player);
+            result &= moves.isEmpty(); // if this is false once, then at least one Detective isn't stuck
+        }
+        return result;
+    }
+
+    private boolean allRoundsAreUsedUp(){
+	    return getCurrentRound() >= getRounds().size();
+    }
+
+    private ScotlandYardPlayer getMrX(){
+        return getPlayerInstanceByColour(Black);
+    }
+
+    private boolean mrXIsStuck(){
+        Set<Move> mrXMoves = getValidMoves(getMrX());
+        return mrXMoves.isEmpty();
+    }
+
+    private boolean mrXIsCaptured() {
+        boolean result = false;
+        ScotlandYardPlayer mrX = getMrX();
+
+        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+            result |= player.location() == mrX.location()
+                    && !player.colour().isMrX(); // if this is true once, then Mr. X has been captured
+        }
+
+        return result;
+    }
+
+    private Set<Colour> mWinners;
+
+    @Override
+    public Set<Colour> getWinningPlayers() {
+        return mWinners;
+    }
+
 
 	@Override
 	public boolean isGameOver() {
-	    boolean result = false;
-		// can detectives still move
-        // -- run out of tickets?
-        // -- run out of usable tickets given their location?
-        boolean winConditionTicketsDepleted = true;
-        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-            if (!player.colour().isMrX()) {
-                winConditionTicketsDepleted &= !(player.tickets().size() > 0);
+        boolean detectivesWin = false;
+        boolean mrXWins = false;
+        mWinners = new HashSet<>();
+
+        // MR.X WINS
+        if (allDetectivesAreTicketless() || allDetectivesAreStuck() || allRoundsAreUsedUp()) {
+            mrXWins = true;
+            mWinners.add(Black);
+        }
+
+        // DETECTIVES WIN
+        if (mrXIsStuck() || mrXIsCaptured()){
+            detectivesWin = true;
+            for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+                if (player.isDetective()) {
+                    mWinners.add(player.colour());
+                }
             }
         }
 
-        boolean winConditionUsableTicketsDepleted = true;
-
-        for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-            if (!player.colour().isMrX()) {
-                Set<Move> moves = getValidMoves(player);
-                winConditionUsableTicketsDepleted &= moves.isEmpty();
-            }
-        }
-
-        // is Mr.X cornered?
-        // has Mr.X been captured?
-
-        // all rounds used up?
-        boolean winConditionAllRoundsUsedUp = mCurrentRound == mRounds.size();
-
-		return result ||
-                winConditionTicketsDepleted ||
-                winConditionAllRoundsUsedUp ||
-                winConditionUsableTicketsDepleted;
+        return mrXWins || detectivesWin;
 	}
 
 	@Override
 	public Colour getCurrentPlayer() {
-        return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
+		return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
 	}
 
 	@Override
@@ -395,7 +429,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public boolean isRevealRound() {
 		return getRounds().get(getCurrentRound() - 1);
-		// ONE SEC - SWITCHING TO PC MIC
 	}
 
 	@Override
