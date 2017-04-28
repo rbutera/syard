@@ -28,7 +28,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mLastRevealedBlack = 0;
 	private boolean mHasBeenRevealed = false;
 
-
+	private boolean DEBUG_ENABLED = true;
+	private void DEBUG_PRINT (String s) {
+		if(DEBUG_ENABLED) {
+			System.out.println(s);
+		}
+	}
 
 	private void setRevealed() {
 		mHasBeenRevealed = true;
@@ -143,8 +148,27 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		mTotalTurnsPlayed++;
 	}
 
+	private void notifyMoves(Move... moves){
+		requireNonNull(moves);
+		for (int i = 0; i < moves.length; ++i) {
+			for (Spectator spec :
+                    getSpectators()) {
+                spec.onMoveMade(this, moves[i]);
+                if(moves[i] instanceof TicketMove || moves[i] instanceof DoubleMove){
+					String moveType = moves[i] instanceof TicketMove ? "T" : "2X";
+					DEBUG_PRINT("-> " + moveType + " Move");
+				}
+            }
+		}
+	}
 	private void processMove(ScotlandYardPlayer player, Move move) {
+		boolean hasNotified = false;
 		if (move instanceof TicketMove) {
+			if(player.isMrX())
+				mCurrentRound++;
+
+			notifyRound(mCurrentRound);
+
 			TicketMove ticketMove = (TicketMove) move;
 
 			player.location(ticketMove.destination());
@@ -155,30 +179,31 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			if (player.colour().isDetective()) {
 				getPlayerInstanceByColour(Black).addTicket(ticketMove.ticket());
 			}
+
+			notifyMoves(move);
 		} else if (move instanceof DoubleMove) {
 			DoubleMove doubleMove = (DoubleMove) move;
-
-			player.location(doubleMove.secondMove().destination());
-
-			// MrX's double moves count as 2 rounds.
-			if(player.colour() == Black){
-				mTotalTurnsPlayed++;
-				newRound();
-			}
-
-			// modify player's tickets
+			TicketMove first = doubleMove.firstMove();
+			TicketMove second = doubleMove.secondMove();
 			player.removeTicket(Double);
-			player.removeTicket(doubleMove.firstMove().ticket());
-			player.removeTicket(doubleMove.secondMove().ticket());
+			notifyMoves(move);
+			notifyRound(++mCurrentRound);
+
+			player.removeTicket(first.ticket());
+			player.location(first.destination());
+			notifyMoves(first);
+
+
+
+			player.removeTicket(second.ticket());
+			player.location(second.destination());
+			notifyRound(++mCurrentRound);
+			mTotalTurnsPlayed++;
+			notifyMoves(second);
 		} else if (move instanceof PassMove) { // pass moves
 			// do nothing for pass moves
 		} else {
 			throw new IllegalArgumentException("Illegal move");
-		}
-
-		// Notify spectators
-		for (Spectator spectator : getSpectators()) {
-			spectator.onMoveMade(this, move);
 		}
 	}
 
@@ -212,21 +237,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			throw new IllegalStateException("Game's already over");
 		}
 
-		newRound();
+		notifyRound(mCurrentRound);
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 
-		// Notify spectators
-		for (Spectator spectator : getSpectators()) {
-			spectator.onRotationComplete(this);
-		}
+
 	}
 
-	private void newRound() {
-		mCurrentRound++;
-		for (Spectator spectator :
-				getSpectators()) {
-			spectator.onRoundStarted(this,mCurrentRound);
-		}
+	private void notifyRound(int round) {
+
+			for (Spectator spectator :
+                    getSpectators()) {
+                spectator.onRoundStarted(this,round);
+                DEBUG_PRINT("start " + round);
+            }
+
 	}
 
 	private int getRoundsRemaining() {
