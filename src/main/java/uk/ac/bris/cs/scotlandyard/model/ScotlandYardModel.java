@@ -155,31 +155,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return getRounds().size() > mCurrentRound + 1 && getRounds().get(mCurrentRound + 1);
 	}
 
-	private void maskedDoubleMove(Ticket fTicket, int fDest, Ticket sTicket, int sDest) {
-
-		for (Spectator spectator : getSpectators()) {
-			spectator.onMoveMade(this, new DoubleMove(Black, fTicket, fDest, sTicket, sDest));
-		}
-		notifyRound(++mCurrentRound);
-
+	private void makeSingleMrXTicketMove(Ticket ticket, int destination) {
 		ScotlandYardPlayer mrX = getMrX();
-		mrX.removeTicket(fTicket);
-		mrX.location(fDest);
-		for (Spectator spectator : getSpectators()) {
-			spectator.onMoveMade(this, new TicketMove(Black, fTicket, fDest));
-			DEBUG_PRINT("1st: " + fTicket);
-		}
 
-		mrX.removeTicket(sTicket);
-		mrX.location(sDest);
-
+		mrX.removeTicket(ticket);
+		mrX.location(destination);
 		notifyRound(++mCurrentRound);
-		mTotalTurnsPlayed++;
 
-		for (Spectator spectator : getSpectators()) {
-			spectator.onMoveMade(this, new TicketMove(Black, sTicket, sDest));
-			DEBUG_PRINT("2nd: " + sTicket);
-		}
+		notifyMove(new TicketMove(mrX.colour(), ticket, destination));
+	}
+
+	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination) {
+		notifyMove(new DoubleMove(Black, firstTicket, firstDestination, secondTicket, secondDestination));
+
+		makeSingleMrXTicketMove(firstTicket,firstDestination);
+		makeSingleMrXTicketMove(secondTicket,secondDestination);
+		mTotalTurnsPlayed++;
 	}
 
 	private boolean haveSpectators() {
@@ -187,90 +178,84 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private Move modifyMoveForRevealRounds(Move move) {
-		Boolean revealThisRound = mCurrentRound > 0 && getRounds().get(mCurrentRound - 1);
-
 		if (move instanceof TicketMove) {
-			if (!revealThisRound) {
+			if (!isRevealRound()) {
 				TicketMove casted = (TicketMove) move;
 				move = new TicketMove(casted.colour(), casted.ticket(), getPlayerLocation(Black));
 			}
 		} else if (move instanceof DoubleMove) {
 			DoubleMove casted = (DoubleMove) move;
-			Ticket fTicket = casted.firstMove().ticket();
 
-			int fDest = casted.firstMove().destination();
-			Ticket sTicket = casted.secondMove().ticket();
+			Ticket firstTicket = casted.firstMove().ticket();
+			int firstDestination = casted.firstMove().destination();
 
-			int sDest = casted.secondMove().destination();
+			Ticket secondTicket = casted.secondMove().ticket();
+			int secondDestination = casted.secondMove().destination();
 
 			if (revealNextRound() && revealRoundAfterNext()) {
-				maskedDoubleMove(fTicket, fDest, sTicket, sDest);
+				maskedDoubleMove(firstTicket, firstDestination, secondTicket, secondDestination);
 			} else if (revealNextRound() && !revealRoundAfterNext()) {
-				maskedDoubleMove(fTicket, fDest, sTicket, fDest);
+				maskedDoubleMove(firstTicket, firstDestination, secondTicket, firstDestination);
 			} else if (!revealNextRound() && revealRoundAfterNext()) {
-				maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, sDest);
+				maskedDoubleMove(firstTicket, getPlayerLocation(Black), secondTicket, secondDestination);
 			} else {
-				maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, getPlayerLocation(Black));
+				maskedDoubleMove(firstTicket, getPlayerLocation(Black), secondTicket, getPlayerLocation(Black));
 			}
 		}
 
 		return move;
 	}
 
+	private void notifyMove(Move move) {
+		if (haveSpectators()) {
+			for (Spectator spectator : getSpectators()) {
+				spectator.onMoveMade(this, move);
+			}
+		}
+	}
+
 	private void notifyMoves(Move... moves){
 		requireNonNull(moves);
 
 		for (Move move : moves) {
-			int i = 0;
-			do {
-				if (move.colour().isMrX()) {
-					notifyRound(mCurrentRound);
-					move = modifyMoveForRevealRounds(move);
-				}
+			if (move.colour().isMrX()) {
+				notifyRound(mCurrentRound);
+				move = modifyMoveForRevealRounds(move);
+			}
 
-				if (!(move instanceof DoubleMove) && haveSpectators()) {
-					Object[] spectators = getSpectators().toArray();
-					Spectator spectator = (Spectator) spectators[i];
-					spectator.onMoveMade(this, move);
-				}
-
-				i++;
-			} while (haveSpectators() && i < getSpectators().size() - 1);
+			// notification for DoubleMoves is handled in maskedDoubleMove
+			if (!(move instanceof DoubleMove)) {
+				notifyMove(move);
+			}
 		}
 
 	}
 	private void processMove(ScotlandYardPlayer player, Move move) {
-
 		if (move instanceof TicketMove) {
-			if(player.isMrX())
-				mCurrentRound++;
+			// Mr. X moves should increment rounds (and notify)
+			if(player.isMrX()) notifyRound(++mCurrentRound);
 
-			notifyRound(mCurrentRound);
+			TicketMove casted = (TicketMove) move;
 
-			TicketMove ticketMove = (TicketMove) move;
+			player.location(casted.destination());
+			player.removeTicket(casted.ticket());
 
-			player.location(ticketMove.destination());
-
-			// modify player's tickets
-			player.removeTicket(ticketMove.ticket());
-
-			if (player.colour().isDetective()) {
-				getMrX().addTicket(ticketMove.ticket());
-			}
-
-			notifyMoves(move);
+			// detectives' consumed tickets are given to Mr. X
+			if (player.colour().isDetective()) getMrX().addTicket(casted.ticket());
 		} else if (move instanceof DoubleMove) {
 			player.removeTicket(Double);
-			notifyMoves(move);
-		} else if (move instanceof PassMove) { // pass moves
-			// do nothing for pass moves
+		} else if (move instanceof PassMove) {
+			// do nothing for PassMoves
 		} else {
 			throw new IllegalArgumentException("Illegal move");
 		}
+
+		notifyMoves(move);
 	}
 
 	private void requestMove(ScotlandYardPlayer player) {
 		requireNonNull(player);
+
 		Set<Move> moves = getValidMoves(player);
 		player.player().makeMove(this, player.location(), moves, this);
 	}
@@ -301,18 +286,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		notifyRound(mCurrentRound);
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-
-
 	}
 
 	private void notifyRound(int round) {
-
-			for (Spectator spectator :
-                    getSpectators()) {
-                spectator.onRoundStarted(this,round);
-                DEBUG_PRINT("start " + round);
-            }
-
+		for (Spectator spectator : getSpectators()) {
+			spectator.onRoundStarted(this,round);
+			DEBUG_PRINT("start " + round);
+		}
 	}
 
 	private int getRoundsRemaining() {
