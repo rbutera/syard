@@ -160,8 +160,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 			player.location(doubleMove.secondMove().destination());
 
+			// MrX's double moves count as 2 rounds.
 			if(player.colour() == Black){
-				mCurrentRound++; // MrX's double moves count as 2 rounds.
+				mTotalTurnsPlayed++;
+				newRound();
 			}
 
 			// modify player's tickets
@@ -173,27 +175,22 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		} else {
 			throw new IllegalArgumentException("Illegal move");
 		}
+
+		// Notify spectators
+		for (Spectator spectator : getSpectators()) {
+			spectator.onMoveMade(this, move);
+		}
 	}
 
 	private void requestMove(ScotlandYardPlayer player) {
 		requireNonNull(player);
 		Set<Move> moves = getValidMoves(player);
-
-		// Notify spectators
-		for (Spectator spectator : getSpectators()) {
-			spectator.onRoundStarted(this, getCurrentRound());
-		}
 		player.player().makeMove(this, player.location(), moves, this);
 	}
 
 	@Override
 	public void accept(Move move) {
 		requireNonNull(move);
-
-		// Notify spectators
-		for (Spectator spectator : getSpectators()) {
-			spectator.onMoveMade(this, move);
-		}
 
 		ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
 		Set<Move> valid = getValidMoves(player);
@@ -215,12 +212,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			throw new IllegalStateException("Game's already over");
 		}
 
-		mCurrentRound++;
+		newRound();
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 
 		// Notify spectators
 		for (Spectator spectator : getSpectators()) {
 			spectator.onRotationComplete(this);
+		}
+	}
+
+	private void newRound() {
+		mCurrentRound++;
+		for (Spectator spectator :
+				getSpectators()) {
+			spectator.onRoundStarted(this,mCurrentRound);
 		}
 	}
 
@@ -340,17 +345,27 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return mLastRevealedBlack;
 	}
 
+
+	@Override
+	public boolean isRevealRound() {
+		if (checkRevealed()) {
+			return getRounds().get(getCurrentRound() - 1);
+		} else {
+			int currentRound = getCurrentRound();
+			return 	(
+					mTotalTurnsPlayed != 0
+					&& currentRound > 0
+					&& currentRound - 1 < getRounds().size()
+					&& getRounds().get(currentRound - 1)
+			);
+		}
+	}
+
 	@Override
 	public int getPlayerLocation(Colour colour) {
 		if (colour.isMrX()) {
-			if (checkRevealed() && isRevealRound()) {
+			if (isRevealRound())
 				updateLastRevealed();
-			} else if (!checkRevealed()){
-				if((mTotalTurnsPlayed != 0 && mCurrentRound > 0 && mCurrentRound < getRounds().size() && getRounds().get(mCurrentRound))){
-					updateLastRevealed();
-				}
-				setRevealed();
-			}
 
 			return mLastRevealedBlack;
 		}
@@ -469,11 +484,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 //		int result = checkRevealed() ? mCurrentRound : 0;
 //		return result;
 		return mCurrentRound;
-	}
-
-	@Override
-	public boolean isRevealRound() {
-		return getRounds().get(getCurrentRound() - 1);
 	}
 
 	@Override
