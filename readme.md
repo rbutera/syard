@@ -28,7 +28,7 @@ mvnw clean compile exec:java
 #### Running Individual Tests
 
 ```
-./mvnw -Dtest=ModelCreationTest test
+./mvnw -Dtest=ModelCreationTest test~
 ```
 
 
