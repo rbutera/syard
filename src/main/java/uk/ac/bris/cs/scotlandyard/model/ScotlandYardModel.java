@@ -191,15 +191,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		requireNonNull(moves);
 
-		Object[] specs = getSpectators().toArray();
+		boolean haveSpectators = getSpectators().size() > 0;
+		Object[] specs;
+		specs = new Object[0];
+		if (haveSpectators) specs = getSpectators().toArray();
 
 
-		for (int i = 0; i < moves.length; ++i) {
-			int j = 0;
+		for (Move move : moves) {
+			int currentSpectatorInLoop = 0;
 			do {
-				boolean haveSpectators = getSpectators().size() > 0;
-
-				Move move = moves[i];
 				boolean moveHasDestination = move instanceof TicketMove || move instanceof DoubleMove;
 
 				if (move.colour().isMrX()) {
@@ -214,7 +214,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 							move = new TicketMove(casted.colour(), casted.ticket(), getPlayerLocation(Black));
 						}
 						if (haveSpectators) {
-							specs[j].onMoveMade(this, move);
+							Spectator spec = (Spectator) specs[currentSpectatorInLoop];
+							spec.onMoveMade(this, move);
 						}
 					} else {
 
@@ -240,8 +241,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 					}
 				}
 
-				j++;
-			} while (j == 0 || (getSpectators().size() > 0 && j < getSpectators().size() - 1));
+				currentSpectatorInLoop++;
+			} while (currentSpectatorInLoop == 0 || (haveSpectators && currentSpectatorInLoop < getSpectators().size() - 1));
 		}
 
 	}
