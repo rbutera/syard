@@ -26,7 +26,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mCurrentRoundTurnsPlayed = 0;
 	private int mTotalPlayers = 0;
 	private int mLastRevealedBlack = 0;
-	private boolean hasBeenRevealed = false;
+	private boolean mHasBeenRevealed = false;
+
+
+
+	private void setRevealed() {
+		mHasBeenRevealed = true;
+	}
+	private boolean checkRevealed() {
+		return mHasBeenRevealed;
+	}
+
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
 		requireNonNull(rounds);
@@ -149,6 +159,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			DoubleMove doubleMove = (DoubleMove) move;
 
 			player.location(doubleMove.secondMove().destination());
+
+			if(player.colour() == Black){
+				mCurrentRound++; // MrX's double moves count as 2 rounds.
+			}
 
 			// modify player's tickets
 			player.removeTicket(Double);
@@ -320,7 +334,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private int updateLastRevealed () {
-		hasBeenRevealed = true;
+		setRevealed();
 		mLastRevealedBlack = getPlayerInstanceByColour(Black).location();
 
 		return mLastRevealedBlack;
@@ -329,13 +343,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	@Override
 	public int getPlayerLocation(Colour colour) {
 		if (colour.isMrX()) {
-			if (hasBeenRevealed && isRevealRound()) {
+			if (checkRevealed() && isRevealRound()) {
 				updateLastRevealed();
-			} else if (!hasBeenRevealed){
+			} else if (!checkRevealed()){
 				if((mTotalTurnsPlayed != 0 && mCurrentRound > 0 && mCurrentRound < getRounds().size() && getRounds().get(mCurrentRound))){
 					updateLastRevealed();
 				}
-				hasBeenRevealed = true;
+				setRevealed();
 			}
 
 			return mLastRevealedBlack;
@@ -451,6 +465,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getCurrentRound() {
+		// TODO: check comment no longer needed here
+//		int result = checkRevealed() ? mCurrentRound : 0;
+//		return result;
 		return mCurrentRound;
 	}
 
