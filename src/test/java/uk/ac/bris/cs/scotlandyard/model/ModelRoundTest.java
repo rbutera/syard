@@ -121,7 +121,7 @@ public class ModelRoundTest extends ModelTestBase {
 		doAnswer(tryChoose(expected)).when(mrX.player)
 				.makeMove(any(), anyInt(), anySet(), any());
 
-		// MrX consumes a double move, we get notified but round should should
+		// MrX consumes a double move, we get notified but round should
 		// not change as DoubleMove is actually 2 moves
 		doAnswer(forSpectator(view -> assertThat(view.getCurrentRound()).isEqualTo(NOT_STARTED)))
 				.when(spectator).onMoveMade(any(), eq(expected));
