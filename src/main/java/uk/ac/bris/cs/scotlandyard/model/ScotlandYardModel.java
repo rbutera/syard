@@ -24,14 +24,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private final List<Boolean> mRounds;
 	private final Graph<Integer, Transport> mGraph;
 	private ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
+	private Set<Colour> mWinningPlayers = new HashSet<>();
 	private int mCurrentRound = 0;
+	private int mTotalTurnsPlayed = 0;
 	private int mCurrentRoundTurnsPlayed = 0;
 	private int mTotalPlayers = 0;
-	private int mTotalTurnsPlayed = 0;
+	private int mLastRevealedBlack = 0;
 	private boolean hasBeenRevealed = false;
-    private ArrayList<Integer> mOccupied;
-	private final ArrayList<PlayerConfiguration> mConfigurations;
-    private int mLastRevealedBlack = 0;
 
 	private List<Boolean> validateRounds(List<Boolean> rounds) {
         requireNonNull(rounds);
@@ -70,12 +69,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 				mRounds = validateRounds(rounds);
 				mGraph = validateGraph(graph);
-			 	mConfigurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
+				ArrayList<PlayerConfiguration> configurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
 
 				Set<Integer> setConfigLocations = new HashSet<>();
 				Set<Colour> setConfigColours = new HashSet<>();
 
-				for (PlayerConfiguration config : mConfigurations) {
+				for (PlayerConfiguration config : configurations) {
 					// prevent duplicate locations
 					if (setConfigLocations.contains(config.location)) {
 					    throw new IllegalArgumentException("Duplicate location");
@@ -103,10 +102,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 					}
 				}
 
-				// populate mScotlandYardPlayers with ScotlandYardPlayers derived from mConfigurations
-				mScotlandYardPlayers = new ArrayList<ScotlandYardPlayer>();
+				// populate mScotlandYardPlayers with ScotlandYardPlayers derived from configurations
+				mScotlandYardPlayers = new ArrayList<>();
 
-				for (PlayerConfiguration config : mConfigurations) {
+				for (PlayerConfiguration config : configurations) {
 					ScotlandYardPlayer player = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
 					mScotlandYardPlayers.add(player);
 					mTotalPlayers++;
@@ -130,19 +129,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
 	private void goNextPlayer(){
-        if (!isGameOver()) {
-            if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
-                mCurrentRoundTurnsPlayed = 0;
-            } else {
-                requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-            }
-            mTotalTurnsPlayed++;
-        }
+		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
+			mCurrentRoundTurnsPlayed = 0;
+		} else {
+			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+		}
+		mTotalTurnsPlayed++;
 	}
 
     private void processMove(ScotlandYardPlayer player, Move move) {
 	    if (move instanceof TicketMove) {
 	        TicketMove ticketMove = (TicketMove) move;
+
             player.location(ticketMove.destination());
 
             // modify player's tickets
@@ -151,26 +149,17 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             if (player.colour().isDetective()) {
             	getPlayerInstanceByColour(Black).addTicket(ticketMove.ticket());
 			}
-
-            // recalculate occupied spaces
-            getOccupiedLocations();
-
-            goNextPlayer();
-        } else if (move instanceof PassMove) { // pass moves
-	    	goNextPlayer();
 		} else if (move instanceof DoubleMove) {
 			DoubleMove doubleMove = (DoubleMove) move;
+
 			player.location(doubleMove.secondMove().destination());
 
 			// modify player's tickets
-			player.removeTicket(Ticket.Double);
+			player.removeTicket(Double);
 			player.removeTicket(doubleMove.firstMove().ticket());
             player.removeTicket(doubleMove.secondMove().ticket());
-
-			// recalculate occupied spaces
-			getOccupiedLocations();
-
-			goNextPlayer();
+		} else if (move instanceof PassMove) { // pass moves
+			// do nothing for pass moves
 		} else {
 	    	throw new IllegalArgumentException("Illegal move");
 		}
@@ -200,8 +189,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         Set<Move> valid = getValidMoves(player);
         if (valid.contains(move)){
             processMove(player, move);
+
+			// recalculate occupied spaces
+			getOccupiedLocations();
+
+			goNextPlayer();
         } else {
-            throw new IllegalArgumentException("Illegal move passed to callback");
+            throw new IllegalArgumentException("Illegal move");
         }
     }
 
@@ -225,18 +219,19 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private ArrayList<Integer> getOccupiedLocations() {
-	    mOccupied = new ArrayList();
+		ArrayList<Integer> result = new ArrayList();
+
         for (ScotlandYardPlayer p: mScotlandYardPlayers) {
             if(!p.colour().isMrX()) {
-                mOccupied.add(p.location());
+				result.add(p.location());
             }
         }
-        return mOccupied;
+
+        return result;
     }
 
 
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
-		// Result
 		Set<Move> moves = new HashSet<>();
 
 		Colour colour = player.colour();
@@ -313,21 +308,25 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		if (moves.isEmpty()) {
 		    moves.add(new PassMove(colour));
         }
+
 		return moves;
 	}
 
 	@Override
 	public List<Colour> getPlayers() {
 		ArrayList<Colour> players = new ArrayList<Colour>();
+
 		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
 			players.add(player.colour());
 		}
+
 		return Collections.unmodifiableList(players);
 	}
 
 	private int updateLastRevealed () {
 		hasBeenRevealed = true;
 		mLastRevealedBlack = getPlayerInstanceByColour(Black).location();
+
 		return mLastRevealedBlack;
 	}
 
@@ -410,11 +409,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return result;
     }
 
-    private Set<Colour> mWinners;
-
     @Override
     public Set<Colour> getWinningPlayers() {
-        return mWinners;
+        return Collections.unmodifiableSet(mWinningPlayers);
     }
 
 
@@ -422,13 +419,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	public boolean isGameOver() {
         boolean detectivesWin = false;
         boolean mrXWins = false;
-        mWinners = new HashSet<>();
 
         // MR.X WINS
         if (allDetectivesAreTicketless() || noDetectivesHaveValidMoves() || allRoundsAreUsedUp()) {
             mrXWins = true;
 
-            mWinners.add(Black);
+            mWinningPlayers.add(Black);
         }
 
         // DETECTIVES WIN
@@ -437,15 +433,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
             for (ScotlandYardPlayer player : mScotlandYardPlayers) {
                 if (player.isDetective()) {
-                    mWinners.add(player.colour());
+                    mWinningPlayers.add(player.colour());
                 }
             }
         }
 
-        if (!mWinners.isEmpty()) {
+        if (!mWinningPlayers.isEmpty()) {
             // Notify spectators
             for (Spectator spectator : getSpectators()) {
-                spectator.onGameOver(this, mWinners);
+                spectator.onGameOver(this, mWinningPlayers);
             }
         }
 
