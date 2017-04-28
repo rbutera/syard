@@ -1,5 +1,8 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
+import org.junit.Test;
+import org.mockito.InOrder;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -20,9 +23,6 @@ import static uk.ac.bris.cs.scotlandyard.model.Colour.Red;
 import static uk.ac.bris.cs.scotlandyard.model.ScotlandYardView.NOT_STARTED;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.Bus;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.Taxi;
-
-import org.junit.Test;
-import org.mockito.InOrder;
 
 /**
  * Test {@link Player} related callbacks for the model
