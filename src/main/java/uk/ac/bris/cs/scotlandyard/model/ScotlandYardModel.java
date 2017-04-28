@@ -206,38 +206,44 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 					notifyRound(mCurrentRound);
 				}
 
-				if (move.colour().isMrX()
-						&& moveHasDestination) {
-					if (move instanceof TicketMove) {
-						if (!revealThisRound) {
-							TicketMove casted = (TicketMove) move;
-							move = new TicketMove(casted.colour(), casted.ticket(), getPlayerLocation(Black));
-						}
+				if (moveHasDestination) {
+					if (move.colour().isMrX()) {
+						if (move instanceof TicketMove) {
+                            if (!revealThisRound) {
+                                TicketMove casted = (TicketMove) move;
+                                move = new TicketMove(casted.colour(), casted.ticket(), getPlayerLocation(Black));
+                            }
+                            if (haveSpectators) {
+                                Spectator spec = (Spectator) specs[currentSpectatorInLoop];
+                                spec.onMoveMade(this, move);
+                            }
+                        } else {
+
+
+                            DoubleMove casted = (DoubleMove) move;
+                            Ticket fTicket = casted.firstMove().ticket();
+
+                            int fDest = casted.firstMove().destination();
+                            Ticket sTicket = casted.secondMove().ticket();
+
+                            int sDest = casted.secondMove().destination();
+
+                            if (revealNextRound() && revealRoundAfterNext()) {
+                                maskedDoubleMove(fTicket, fDest, sTicket, sDest);
+                            } else if (revealNextRound() && !revealRoundAfterNext()) {
+                                maskedDoubleMove(fTicket, fDest, sTicket, fDest);
+                            } else if (!revealNextRound() && revealRoundAfterNext()) {
+                                maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, sDest);
+                            } else {
+                                maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, getPlayerLocation(Black));
+                            }
+
+                        }
+					} else { // notify for non-Mr. X players (detectives)
 						if (haveSpectators) {
 							Spectator spec = (Spectator) specs[currentSpectatorInLoop];
 							spec.onMoveMade(this, move);
 						}
-					} else {
-
-
-						DoubleMove casted = (DoubleMove) move;
-						Ticket fTicket = casted.firstMove().ticket();
-
-						int fDest = casted.firstMove().destination();
-						Ticket sTicket = casted.secondMove().ticket();
-
-						int sDest = casted.secondMove().destination();
-
-						if (revealNextRound() && revealRoundAfterNext()) {
-							maskedDoubleMove(fTicket, fDest, sTicket, sDest);
-						} else if (revealNextRound() && !revealRoundAfterNext()) {
-							maskedDoubleMove(fTicket, fDest, sTicket, fDest);
-						} else if (!revealNextRound() && revealRoundAfterNext()) {
-							maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, sDest);
-						} else {
-							maskedDoubleMove(fTicket, getPlayerLocation(Black), sTicket, getPlayerLocation(Black));
-						}
-
 					}
 				}
 
