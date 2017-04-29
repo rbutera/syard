@@ -441,7 +441,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public List<Colour> getPlayers() {
-		ArrayList<Colour> players = new ArrayList<Colour>();
+		ArrayList<Colour> players = new ArrayList<>();
 
 		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
 			players.add(player.colour());
@@ -487,13 +487,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getPlayerTickets(Colour colour, Ticket ticket) {
-		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			if (player.colour() == colour) {
-				return player.tickets().get(ticket);
-			}
-		}
-
-		return 0;
+		return getPlayerInstanceByColour(colour).tickets().get(ticket);
 	}
 
 	private boolean allDetectivesAreTicketless() {
@@ -502,8 +496,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				if (player.hasTickets(Bus)) return false;
 				if (player.hasTickets(Taxi)) return false;
 				if (player.hasTickets(Underground)) return false;
-				if (player.hasTickets(Double)) return false;
-				if (player.hasTickets(Secret)) return false;
+				//if (player.hasTickets(Double)) return false; // Detectives should never have Double tickets
+				//if (player.hasTickets(Secret)) return false; // Detectives should never have Secret tickets
 			}
 		}
 
@@ -514,8 +508,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		boolean result = true;
 
 		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			PassMove playerPassMove = new PassMove(player.colour());
-			result &= getValidMoves(player).contains(playerPassMove); // if this is false once, then at least one Detective isn't stuck
+			if (player.colour().isDetective()) {
+				PassMove passMove = new PassMove(player.colour());
+				result &= getValidMoves(player).contains(passMove); // if this is false once, then at least one Detective isn't stuck
+			}
 		}
 
 		return result;
