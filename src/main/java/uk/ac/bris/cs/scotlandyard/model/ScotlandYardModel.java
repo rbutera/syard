@@ -27,7 +27,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mTotalPlayers = 0;
 	private int mLastRevealedBlack = 0;
 	private boolean mHasBeenRevealed = false;
-	private boolean gameOverNotified = false;
+	private boolean mGameOverNotified = false;
 
 	private boolean DEBUG_ENABLED = true;
 	private void DEBUG_PRINT (String s) {
@@ -142,7 +142,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private void goNextPlayer(){
 		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
 			mCurrentRoundTurnsPlayed = 0;
-			if(!gameOverNotified) {
+			if(!mGameOverNotified) {
 				notifyRotationComplete();
 			}
 		} else {
@@ -211,7 +211,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private void notifyMove(Move move) {
-		if (haveSpectators() && !gameOverNotified) {
+		if (haveSpectators() && !mGameOverNotified) {
 			for (Spectator spectator : getSpectators()) {
 				spectator.onMoveMade(this, move);
 				String colour;
@@ -240,7 +240,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				}
 				DEBUG_PRINT(colour);
 			}
-		} else if (gameOverNotified) {
+		} else if (mGameOverNotified) {
 			DEBUG_PRINT("X");
 		}
 	}
@@ -432,7 +432,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			}
 		}
 
-		if (moves.isEmpty()) {
+		if (colour.isDetective() && moves.isEmpty()) {
 			moves.add(new PassMove(colour));
 		}
 
@@ -525,9 +525,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return getPlayerInstanceByColour(Black);
 	}
 
-	private boolean mrXHasNoValidMoves(){
-		PassMove mrXPassMove = new PassMove(Black);
-		return getValidMoves(getMrX()).contains(mrXPassMove);
+	private boolean mrXIsStuck(){
+		return getValidMoves(getMrX()).isEmpty();
 	}
 
 	private boolean mrXIsCaptured() {
@@ -535,7 +534,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		ScotlandYardPlayer mrX = getMrX();
 		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			result = result || (player.colour() != Black && mrX.location() == player.location()); // if this is true once, then Mr. X has been captured
+			result = result || (player.colour() != mrX.colour() && mrX.location() == player.location()); // if this is true once, then Mr. X has been captured
 		}
 
 		return result;
@@ -546,39 +545,44 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return Collections.unmodifiableSet(mWinningPlayers);
 	}
 
+	private Set<Colour> determineWinners(Set<Colour> set) {
+		for (ScotlandYardPlayer player : mScotlandYardPlayers)
+			if ((player.isDetective() && mDetectivesWin) || (player.isMrX() && mMrXWins))
+				set.add(player.colour());
 
-	@Override
-	public boolean isGameOver() {
-		boolean detectivesWin = false;
-		boolean mrXWins = false;
+		return set;
+	}
 
-		// MR.X WINS
-		if (allDetectivesAreTicketless() || noDetectivesHaveValidMoves() || allRoundsAreUsedUp()) {
-			mrXWins = true;
+	private boolean mDetectivesWin = false;
+	private boolean mMrXWins = false;
 
-			mWinningPlayers.add(Black);
-		}
-
-		// DETECTIVES WIN
-		if (mrXHasNoValidMoves() || mrXIsCaptured()){
-			detectivesWin = true;
-
-			for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-				if (player.isDetective()) {
-					mWinningPlayers.add(player.colour());
-				}
-			}
-		}
-
-		boolean result = mrXWins || detectivesWin;
-		if(result && haveSpectators() && !gameOverNotified){
+	private void notifyGameOver() {
+		if((mMrXWins || mDetectivesWin) && haveSpectators() && !mGameOverNotified){
 			for (Spectator spectator : getSpectators()) {
 				spectator.onGameOver(this, getWinningPlayers());
 				DEBUG_PRINT("GAME OVER");
 			}
-			gameOverNotified = true;
+			mGameOverNotified = true;
 		}
-		return result;
+	}
+
+	@Override
+	public boolean isGameOver() {
+		// MR.X WINS
+		if (allDetectivesAreTicketless() || noDetectivesHaveValidMoves() || allRoundsAreUsedUp()) {
+			mMrXWins = true;
+		}
+
+		// DETECTIVES WIN
+		if (mrXIsStuck() || mrXIsCaptured()){
+			mDetectivesWin = true;
+		}
+
+		mWinningPlayers = determineWinners(mWinningPlayers);
+
+		notifyGameOver();
+
+		return mMrXWins || mDetectivesWin;
 	}
 
 	@Override
@@ -588,9 +592,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 	@Override
 	public int getCurrentRound() {
-		// TODO: check comment no longer needed here
-//		int result = checkRevealed() ? mCurrentRound : 0;
-//		return result;
 		return mCurrentRound;
 	}
 
