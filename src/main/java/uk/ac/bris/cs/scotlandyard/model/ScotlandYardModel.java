@@ -142,6 +142,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private void goNextPlayer(){
 		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
 			mCurrentRoundTurnsPlayed = 0;
+			notifyRotationComplete();
 		} else {
 			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 		}
@@ -241,6 +242,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				player.location(casted.destination());
 				player.removeTicket(casted.ticket());
 
+				if(mrXIsCaptured()) {
+					isGameOver();
+				}
+
 				// detectives' consumed tickets are given to Mr. X
 				getMrX().addTicket(casted.ticket());
 			}
@@ -297,7 +302,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		notifyRound(mCurrentRound);
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-		notifyRotationComplete();
+
 		if (getRoundsRemaining() == 0) {
 			isGameOver(); // ?
 		}
