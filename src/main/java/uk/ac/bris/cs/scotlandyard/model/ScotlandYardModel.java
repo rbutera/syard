@@ -27,6 +27,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private int mTotalPlayers = 0;
 	private int mLastRevealedBlack = 0;
 	private boolean mHasBeenRevealed = false;
+	private boolean gameOverNotified = false;
 
 	private boolean DEBUG_ENABLED = true;
 	private void DEBUG_PRINT (String s) {
@@ -297,6 +298,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		notifyRound(mCurrentRound);
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 		notifyRotationComplete();
+		if (getRoundsRemaining() == 0) {
+			isGameOver(); // ?
+		}
 	}
 
 	private void notifyRound(int round) {
@@ -504,8 +508,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		ScotlandYardPlayer mrX = getMrX();
 		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			result |= player.location() == mrX.location()
-					&& !player.colour().isMrX(); // if this is true once, then Mr. X has been captured
+			result = result || (player.colour() != Black && mrX.location() == player.location()); // if this is true once, then Mr. X has been captured
 		}
 
 		return result;
@@ -540,14 +543,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			}
 		}
 
-		if (!mWinningPlayers.isEmpty()) {
-			// Notify spectators
+		boolean result = mrXWins || detectivesWin;
+		if(result && haveSpectators() && !gameOverNotified){
 			for (Spectator spectator : getSpectators()) {
-				spectator.onGameOver(this, mWinningPlayers);
+				spectator.onGameOver(this, getWinningPlayers());
 			}
+			gameOverNotified = true;
 		}
-
-		return mrXWins || detectivesWin;
+		return result;
 	}
 
 	@Override
