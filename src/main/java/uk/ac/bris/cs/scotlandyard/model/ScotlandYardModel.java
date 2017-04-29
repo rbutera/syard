@@ -280,6 +280,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		}
 	}
 
+	private void notifyRotationComplete() {
+		if (haveSpectators()) {
+			for (Spectator spectator : getSpectators()) {
+				spectator.onRotationComplete(this);
+			}
+		}
+	}
+
 	@Override
 	public void startRotate() {
 		if (isGameOver()) {
@@ -288,6 +296,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 		notifyRound(mCurrentRound);
 		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+		notifyRotationComplete();
 	}
 
 	private void notifyRound(int round) {
