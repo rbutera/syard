@@ -142,7 +142,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private void goNextPlayer(){
 		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
 			mCurrentRoundTurnsPlayed = 0;
-			notifyRotationComplete();
+			if(!gameOverNotified) {
+				notifyRotationComplete();
+			}
 		} else {
 			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
 		}
@@ -209,10 +211,37 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private void notifyMove(Move move) {
-		if (haveSpectators()) {
+		if (haveSpectators() && !gameOverNotified) {
 			for (Spectator spectator : getSpectators()) {
 				spectator.onMoveMade(this, move);
+				String colour;
+				switch(move.colour()){
+					case Black:
+						colour = "Black";
+						break;
+					case Red:
+						colour = "Red";
+						break;
+					case Yellow:
+						colour = "Yellow";
+						break;
+					case Green:
+						colour = "Green";
+						break;
+					case Blue:
+						colour = "Blue";
+						break;
+					case White:
+						colour = "Privileged";
+						break;
+					default:
+						colour = "unknown";
+						break;
+				}
+				DEBUG_PRINT(colour);
 			}
+		} else if (gameOverNotified) {
+			DEBUG_PRINT("X");
 		}
 	}
 
@@ -223,11 +252,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			if (move.colour().isMrX()) {
 				notifyRound(mCurrentRound);
 				move = modifyMoveForRevealRounds(move);
-			}
-
-			// notification for DoubleMoves is handled in maskedDoubleMove
-			if (!(move instanceof DoubleMove)) {
+			} else {
 				notifyMove(move);
+				if (mrXIsCaptured()) {
+					isGameOver();
+				}
 			}
 		}
 
@@ -241,10 +270,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			} else {
 				player.location(casted.destination());
 				player.removeTicket(casted.ticket());
-
-				if(mrXIsCaptured()) {
-					isGameOver();
-				}
 
 				// detectives' consumed tickets are given to Mr. X
 				getMrX().addTicket(casted.ticket());
@@ -292,6 +317,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 				spectator.onRotationComplete(this);
 			}
 		}
+		DEBUG_PRINT("rotation complete");
 	}
 
 	@Override
@@ -552,6 +578,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		if(result && haveSpectators() && !gameOverNotified){
 			for (Spectator spectator : getSpectators()) {
 				spectator.onGameOver(this, getWinningPlayers());
+				DEBUG_PRINT("GAME OVER");
 			}
 			gameOverNotified = true;
 		}
