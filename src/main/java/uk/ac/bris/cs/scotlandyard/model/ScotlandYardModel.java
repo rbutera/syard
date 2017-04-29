@@ -232,16 +232,18 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 	private void processMove(ScotlandYardPlayer player, Move move) {
 		if (move instanceof TicketMove) {
-			// Mr. X moves should increment rounds (and notify)
-			if(player.isMrX()) notifyRound(++mCurrentRound);
-
 			TicketMove casted = (TicketMove) move;
 
-			player.location(casted.destination());
-			player.removeTicket(casted.ticket());
+			if (player.isMrX()) {
+				makeSingleMrXTicketMove(casted.ticket(),casted.destination());
+			} else {
+				player.location(casted.destination());
+				player.removeTicket(casted.ticket());
 
-			// detectives' consumed tickets are given to Mr. X
-			if (player.colour().isDetective()) getMrX().addTicket(casted.ticket());
+				// detectives' consumed tickets are given to Mr. X
+				getMrX().addTicket(casted.ticket());
+			}
+
 		} else if (move instanceof DoubleMove) {
 			player.removeTicket(Double);
 		} else if (move instanceof PassMove) {
