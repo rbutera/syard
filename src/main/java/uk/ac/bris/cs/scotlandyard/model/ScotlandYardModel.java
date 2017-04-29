@@ -159,22 +159,43 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return getRounds().size() > mCurrentRound + 1 && getRounds().get(mCurrentRound + 1);
 	}
 
-	private void makeSingleMrXTicketMove(Ticket ticket, int destination) {
+	private void makeSingleMrXTicketMove(Ticket ticket, int maskedDestination, int trueDestination) {
 		ScotlandYardPlayer mrX = getMrX();
 
 		mrX.removeTicket(ticket);
-		mrX.location(destination);
+		mrX.location(trueDestination); // the internal logic needs to know Mr. X's actual location
 		notifyRound(++mCurrentRound);
 
-		notifyMove(new TicketMove(mrX.colour(), ticket, destination));
+		// the spectators should be notified of Mr. X's masked location
+		notifyMove(new TicketMove(mrX.colour(), ticket, maskedDestination));
 	}
 
-	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination) {
+	// this overloaded method is called when the masked and true destinations are the same
+	private void makeSingleMrXTicketMove(Ticket ticket, int destination) {
+		makeSingleMrXTicketMove(ticket,destination,destination);
+	}
+
+	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
 		notifyMove(new DoubleMove(Black, firstTicket, firstDestination, secondTicket, secondDestination));
 
-		makeSingleMrXTicketMove(firstTicket,firstDestination);
-		makeSingleMrXTicketMove(secondTicket,secondDestination);
+		makeSingleMrXTicketMove(firstTicket,firstDestination,trueFirstDestination);
+		makeSingleMrXTicketMove(secondTicket,secondDestination,trueSecondDestination);
 		mTotalTurnsPlayed++;
+	}
+
+	// this overloaded method is called when only the second move's masked and true destinations are the same
+	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination) {
+		maskedDoubleMove(firstTicket,firstDestination,trueFirstDestination,secondTicket,secondDestination,secondDestination);
+	}
+
+	// this overloaded method is called when only the first move's masked and true destinations are the same
+	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
+		maskedDoubleMove(firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,trueSecondDestination);
+	}
+
+	// this overloaded method is called when both the first and second moves' masked and true destinations are the same
+	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination) {
+		maskedDoubleMove(firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,secondDestination);
 	}
 
 	private boolean haveSpectators() {
@@ -199,11 +220,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			if (revealNextRound() && revealRoundAfterNext()) {
 				maskedDoubleMove(firstTicket, firstDestination, secondTicket, secondDestination);
 			} else if (revealNextRound() && !revealRoundAfterNext()) {
-				maskedDoubleMove(firstTicket, firstDestination, secondTicket, firstDestination);
+				maskedDoubleMove(firstTicket, firstDestination, secondTicket, firstDestination, secondDestination);
 			} else if (!revealNextRound() && revealRoundAfterNext()) {
-				maskedDoubleMove(firstTicket, getPlayerLocation(Black), secondTicket, secondDestination);
+				maskedDoubleMove(firstTicket, getPlayerLocation(Black), firstDestination, secondTicket, secondDestination);
 			} else {
-				maskedDoubleMove(firstTicket, getPlayerLocation(Black), secondTicket, getPlayerLocation(Black));
+				maskedDoubleMove(firstTicket, getPlayerLocation(Black), firstDestination, secondTicket, getPlayerLocation(Black), secondDestination);
 			}
 		}
 
@@ -545,7 +566,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return Collections.unmodifiableSet(mWinningPlayers);
 	}
 
-	private Set<Colour> determineWinners(Set<Colour> set) {
+	private Set<Colour> populateSetWithWinningPlayers(Set<Colour> set) {
 		for (ScotlandYardPlayer player : mScotlandYardPlayers)
 			if ((player.isDetective() && mDetectivesWin) || (player.isMrX() && mMrXWins))
 				set.add(player.colour());
@@ -578,7 +599,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			mDetectivesWin = true;
 		}
 
-		mWinningPlayers = determineWinners(mWinningPlayers);
+		mWinningPlayers = populateSetWithWinningPlayers(mWinningPlayers);
 
 		notifyGameOver();
 
