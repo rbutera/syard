@@ -17,17 +17,16 @@ import static uk.ac.bris.cs.scotlandyard.model.Ticket.Double;
 // TODO implement all methods and pass all tests
 public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
-	private final List<Boolean> mRounds;
-	private final Graph<Integer, Transport> mGraph;
-	private ArrayList<ScotlandYardPlayer> mScotlandYardPlayers;
+	private List<Boolean> mRounds;
+	private Graph<Integer, Transport> mGraph;
+	private ArrayList<ScotlandYardPlayer> mScotlandYardPlayers = new ArrayList<>();;
 	private Set<Colour> mWinningPlayers = new HashSet<>();
 	private int mCurrentRound = NOT_STARTED;
-	private int mTotalTurnsPlayed = 0;
-	private int mCurrentRoundTurnsPlayed = 0;
+	private int mCurrentTurn = 0;
 	private int mTotalPlayers = 0;
 	private int mLastRevealedBlack = 0;
-	private boolean mHasBeenRevealed = false;
-	private boolean mGameOverNotified = false;
+	private boolean mGameOverNotificationSent = false;
+	private List<Spectator> mSpectators = new ArrayList<>();
 
 	private boolean DEBUG_ENABLED = true;
 	private void DEBUG_PRINT (String s) {
@@ -36,41 +35,47 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		}
 	}
 
-	private void setRevealed() {
-		mHasBeenRevealed = true;
-	}
-	private boolean checkRevealed() {
-		return mHasBeenRevealed;
+	private boolean isGameOverNotificationSent() {
+		return mGameOverNotificationSent;
 	}
 
+	private void sentGameOverNotification() {
+		this.mGameOverNotificationSent = true;
+	}
 
-	private List<Boolean> validateRounds(List<Boolean> rounds) {
+	private ArrayList<ScotlandYardPlayer> getScotlandYardPlayers() {
+		return mScotlandYardPlayers;
+	}
+
+	private void validateAndImportRounds(List<Boolean> rounds) {
 		requireNonNull(rounds);
+
 		if (rounds.isEmpty()) {
 			throw new IllegalArgumentException("Empty rounds");
 		}
-		return rounds;
+
+		this.mRounds = rounds;
 	}
 
-	private Graph<Integer, Transport> validateGraph(Graph<Integer, Transport> graph) {
+	private void validateAndImportGraph(Graph<Integer, Transport> graph) {
 		requireNonNull(graph);
+
 		if (graph.isEmpty()) {
 			throw new IllegalArgumentException("Empty graph");
 		}
-		return graph;
+
+		this.mGraph = graph;
 	}
 
-
 	private ArrayList<PlayerConfiguration> configurePlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
-		if (mrX.colour != Black) {
-			throw new IllegalArgumentException("MrX should be Black");
-		}
+		if (mrX.colour != Black) throw new IllegalArgumentException("MrX should be Black");
+
 		ArrayList<PlayerConfiguration> configurations = new ArrayList<>();
 		configurations.add(requireNonNull(mrX));
 		configurations.add(requireNonNull(firstDetective));
 
 		for (PlayerConfiguration config : restOfTheDetectives) {
-			configurations.add(requireNonNull(config));
+			configurations.add(config);
 		}
 		return configurations;
 	}
@@ -79,8 +84,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 							 PlayerConfiguration mrX, PlayerConfiguration firstDetective,
 							 PlayerConfiguration... restOfTheDetectives) {
 
-		mRounds = validateRounds(rounds);
-		mGraph = validateGraph(graph);
+		validateAndImportRounds(rounds);
+		validateAndImportGraph(graph);
 		ArrayList<PlayerConfiguration> configurations = configurePlayers(mrX, firstDetective, restOfTheDetectives);
 
 		Set<Integer> setConfigLocations = new HashSet<>();
@@ -110,129 +115,84 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
 			// prevent invalid tickets
 			if (!config.colour.isMrX() && (config.tickets.get(Secret) != 0 || config.tickets.get(Double) != 0)) {
-				throw new IllegalArgumentException("Detectives cannot have Secret or Double tickets");
+				throw new IllegalArgumentException("Only Mr.X can have Secret or Double tickets");
 			}
-		}
 
-		// populate mScotlandYardPlayers with ScotlandYardPlayers derived from configurations
-		mScotlandYardPlayers = new ArrayList<>();
-
-		for (PlayerConfiguration config : configurations) {
-			ScotlandYardPlayer player = new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets);
-			mScotlandYardPlayers.add(player);
-			mTotalPlayers++;
+			// populate mScotlandYardPlayers with ScotlandYardPlayers derived from configurations
+			addScotlandYardPlayer(new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets));
+			incrementTotalPlayers();
 		}
+	}
+
+	private void addScotlandYardPlayer(ScotlandYardPlayer player) {
+		this.mScotlandYardPlayers.add(player);
 	}
 
 	private ScotlandYardPlayer getPlayerInstanceByColour (Colour colour){
-		requireNonNull(colour);
-		ScotlandYardPlayer result = null;
+		for (ScotlandYardPlayer player : getScotlandYardPlayers())
+			if (player.colour() == colour) return player;
 
-		for (ScotlandYardPlayer player : mScotlandYardPlayers)
-			if (player.colour() == colour) result = player;
-
-		if (result == null){
-			throw new IllegalArgumentException("Could not find player for colour");
-		}
-
-		return result;
+		return null;
 	}
 
+	private void setCurrentTurn(int n) {
+		this.mCurrentTurn = n;
+	}
 
-	private void goNextPlayer(){
-		if (++mCurrentRoundTurnsPlayed >= mTotalPlayers){
-			mCurrentRoundTurnsPlayed = 0;
-			if(!mGameOverNotified) {
-				notifyRotationComplete();
+	private void endTurn(){
+		setCurrentTurn(getCurrentTurn() + 1);
+
+		if (getCurrentTurn() >= getTotalPlayers()){
+			notifyRotationComplete();
+
+			if (getRoundsRemaining() == 0) {
+				isGameOver();
 			}
+
+			setCurrentTurn(0);
 		} else {
-			requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
+			requestNextMove();
 		}
-		mTotalTurnsPlayed++;
 	}
 
-	private boolean revealNextRound() {
-		return getRounds().size() > mCurrentRound && getRounds().get(mCurrentRound);
+	private int getTotalPlayers() {
+		return this.mTotalPlayers;
 	}
 
-	private boolean revealRoundAfterNext() {
-		return getRounds().size() > mCurrentRound + 1 && getRounds().get(mCurrentRound + 1);
+	private void incrementTotalPlayers() {
+		this.mTotalPlayers++;
 	}
 
-	private void makeSingleMrXTicketMove(Ticket ticket, int maskedDestination, int trueDestination) {
-		ScotlandYardPlayer mrX = getMrX();
+	private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
+		DoubleMove doubleMove = new DoubleMove(player.colour(), firstTicket, firstDestination, secondTicket, secondDestination);
 
-		mrX.removeTicket(ticket);
-		mrX.location(trueDestination); // the internal logic needs to know Mr. X's actual location
-		notifyRound(++mCurrentRound);
+		notifyMove(doubleMove);
 
-		// the spectators should be notified of Mr. X's masked location
-		notifyMove(new TicketMove(mrX.colour(), ticket, maskedDestination));
+		performTicketMove(player,doubleMove.firstMove(),trueFirstDestination);
+		performTicketMove(player,doubleMove.secondMove(),trueSecondDestination);
 	}
 
-	// this overloaded method is called when the masked and true destinations are the same
-	private void makeSingleMrXTicketMove(Ticket ticket, int destination) {
-		makeSingleMrXTicketMove(ticket,destination,destination);
+	// this overloaded method is called when only the second move's destination is not masked
+	private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination) {
+		maskedDoubleMove(player,firstTicket,firstDestination,trueFirstDestination,secondTicket,secondDestination,secondDestination);
 	}
 
-	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
-		notifyMove(new DoubleMove(Black, firstTicket, firstDestination, secondTicket, secondDestination));
-
-		makeSingleMrXTicketMove(firstTicket,firstDestination,trueFirstDestination);
-		makeSingleMrXTicketMove(secondTicket,secondDestination,trueSecondDestination);
-		mTotalTurnsPlayed++;
+	// this overloaded method is called when only the first move's destination is not masked
+	private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
+		maskedDoubleMove(player,firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,trueSecondDestination);
 	}
 
-	// this overloaded method is called when only the second move's masked and true destinations are the same
-	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination) {
-		maskedDoubleMove(firstTicket,firstDestination,trueFirstDestination,secondTicket,secondDestination,secondDestination);
+	// this overloaded method is called when both the first and second moves' destinations are not masked
+	private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination) {
+		maskedDoubleMove(player,firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,secondDestination);
 	}
 
-	// this overloaded method is called when only the first move's masked and true destinations are the same
-	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
-		maskedDoubleMove(firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,trueSecondDestination);
-	}
-
-	// this overloaded method is called when both the first and second moves' masked and true destinations are the same
-	private void maskedDoubleMove(Ticket firstTicket, int firstDestination, Ticket secondTicket, int secondDestination) {
-		maskedDoubleMove(firstTicket,firstDestination,firstDestination,secondTicket,secondDestination,secondDestination);
-	}
-
-	private boolean haveSpectators() {
-		return getSpectators().size() > 0;
-	}
-
-	private Move modifyMoveForRevealRounds(Move move) {
-		if (move instanceof TicketMove) {
-			if (!isRevealRound()) {
-				TicketMove casted = (TicketMove) move;
-				move = new TicketMove(casted.colour(), casted.ticket(), getPlayerLocation(Black));
-			}
-		} else if (move instanceof DoubleMove) {
-			DoubleMove casted = (DoubleMove) move;
-
-			Ticket firstTicket = casted.firstMove().ticket();
-			int firstDestination = casted.firstMove().destination();
-
-			Ticket secondTicket = casted.secondMove().ticket();
-			int secondDestination = casted.secondMove().destination();
-
-			if (revealNextRound() && revealRoundAfterNext()) {
-				maskedDoubleMove(firstTicket, firstDestination, secondTicket, secondDestination);
-			} else if (revealNextRound() && !revealRoundAfterNext()) {
-				maskedDoubleMove(firstTicket, firstDestination, secondTicket, firstDestination, secondDestination);
-			} else if (!revealNextRound() && revealRoundAfterNext()) {
-				maskedDoubleMove(firstTicket, getPlayerLocation(Black), firstDestination, secondTicket, secondDestination);
-			} else {
-				maskedDoubleMove(firstTicket, getPlayerLocation(Black), firstDestination, secondTicket, getPlayerLocation(Black), secondDestination);
-			}
-		}
-
-		return move;
+	private boolean canNotifySpectators() {
+		return !getSpectators().isEmpty() && !isGameOverNotificationSent();
 	}
 
 	private void notifyMove(Move move) {
-		if (haveSpectators() && !mGameOverNotified) {
+		if (canNotifySpectators()) {
 			for (Spectator spectator : getSpectators()) {
 				spectator.onMoveMade(this, move);
 				String colour;
@@ -259,59 +219,65 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 						colour = "unknown";
 						break;
 				}
-				DEBUG_PRINT(colour);
-			}
-		} else if (mGameOverNotified) {
-			DEBUG_PRINT("X");
-		}
-	}
-
-	private void notifyMoves(Move... moves){
-		requireNonNull(moves);
-
-		for (Move move : moves) {
-			if (move.colour().isMrX()) {
-				notifyRound(mCurrentRound);
-				move = modifyMoveForRevealRounds(move);
-			} else {
-				notifyMove(move);
-				if (mrXIsCaptured()) {
-					isGameOver();
-				}
+				DEBUG_PRINT(" -> " + colour + "'s turn");
 			}
 		}
-
 	}
-	private void processMove(ScotlandYardPlayer player, Move move) {
-		if (move instanceof TicketMove) {
-			TicketMove casted = (TicketMove) move;
+	private void performDoubleMove(ScotlandYardPlayer player, DoubleMove doubleMove){
+		player.removeTicket(Double);
+		int currentLocation = getPlayerLocation(player.colour());
 
-			if (player.isMrX()) {
-				makeSingleMrXTicketMove(casted.ticket(),casted.destination());
-			} else {
-				player.location(casted.destination());
-				player.removeTicket(casted.ticket());
+		Ticket firstTicket = doubleMove.firstMove().ticket();
+		int firstDestination = doubleMove.firstMove().destination();
 
-				// detectives' consumed tickets are given to Mr. X
-				getMrX().addTicket(casted.ticket());
-			}
+		Ticket secondTicket = doubleMove.secondMove().ticket();
+		int secondDestination = doubleMove.secondMove().destination();
 
-		} else if (move instanceof DoubleMove) {
-			player.removeTicket(Double);
-		} else if (move instanceof PassMove) {
-			// do nothing for PassMoves
+		boolean isRevealRoundInOneRound = isRevealRound(1);
+		boolean isRevealRoundInTwoRounds = isRevealRound(2);
+
+		if (isRevealRoundInOneRound && isRevealRoundInTwoRounds) {
+			// the next round and the around after are both reveal rounds
+			maskedDoubleMove(player, firstTicket, firstDestination, secondTicket, secondDestination);
+		} else if (isRevealRoundInOneRound && !isRevealRoundInTwoRounds) {
+			// the next round is a reveal round and the round after is a hidden round
+			maskedDoubleMove(player, firstTicket, firstDestination, secondTicket, firstDestination, secondDestination);
+		} else if (!isRevealRoundInOneRound && isRevealRoundInTwoRounds) {
+			// the next round is a hidden round and the round after is a reveal round
+			maskedDoubleMove(player, firstTicket, currentLocation, firstDestination, secondTicket, secondDestination);
 		} else {
-			throw new IllegalArgumentException("Illegal move");
+			// the next round and the round after are both hidden rounds
+			maskedDoubleMove(player, firstTicket, currentLocation, firstDestination, secondTicket, currentLocation, secondDestination);
 		}
-
-		notifyMoves(move);
 	}
 
-	private void requestMove(ScotlandYardPlayer player) {
-		requireNonNull(player);
+	private void performTicketMove(ScotlandYardPlayer player, TicketMove move, int trueDestination) {
+		Ticket ticket = move.ticket();
 
-		Set<Move> moves = getValidMoves(player);
-		player.player().makeMove(this, player.location(), moves, this);
+		player.removeTicket(ticket);
+		player.location(trueDestination);
+
+		if(player.isMrX()) notifyRound(incrementCurrentRound());
+		if(player.isDetective()) getMrX().addTicket(ticket);
+
+		notifyMove(move);
+		if (mrXIsCaptured()) isGameOver();
+	}
+
+	// overloaded version to simplify calls where the destination hasn't been masked
+	private void performTicketMove(ScotlandYardPlayer player, TicketMove move) {
+		performTicketMove(player,move,move.destination());
+	}
+
+	private void performMove(ScotlandYardPlayer player, Move move) {
+		if      (move instanceof TicketMove) performTicketMove(player,(TicketMove) move);
+		else if (move instanceof DoubleMove) performDoubleMove(player,(DoubleMove) move);
+		else if (move instanceof PassMove)   notifyMove(move);
+	}
+
+	private void requestNextMove() {
+		ScotlandYardPlayer player = getPlayerInstanceByColour(getCurrentPlayer());
+		player.player().makeMove(this, player.location(), getValidMoves(player), this);
 	}
 
 	@Override
@@ -319,26 +285,23 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		requireNonNull(move);
 
 		ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
-		Set<Move> valid = getValidMoves(player);
-		if (valid.contains(move)){
-			processMove(player, move);
 
-			// recalculate occupied spaces
-			getOccupiedLocations();
-
-			goNextPlayer();
+		if (getValidMoves(player).contains(move)){
+			performMove(player, move);
 		} else {
 			throw new IllegalArgumentException("Illegal move");
 		}
+
+		endTurn();
 	}
 
 	private void notifyRotationComplete() {
-		if (haveSpectators()) {
+		if (canNotifySpectators()) {
 			for (Spectator spectator : getSpectators()) {
 				spectator.onRotationComplete(this);
 			}
 		}
-		DEBUG_PRINT("rotation complete");
+		DEBUG_PRINT("====== END ROUND ======");
 	}
 
 	@Override
@@ -347,31 +310,26 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			throw new IllegalStateException("Game's already over");
 		}
 
-		notifyRound(mCurrentRound);
-		requestMove(getPlayerInstanceByColour(getCurrentPlayer()));
-
-		if (getRoundsRemaining() == 0) {
-			isGameOver(); // ?
-		}
+		requestNextMove();
 	}
 
 	private void notifyRound(int round) {
 		for (Spectator spectator : getSpectators()) {
 			spectator.onRoundStarted(this,round);
-			DEBUG_PRINT("start " + round);
 		}
+		DEBUG_PRINT("====== ROUND:  " + round + " ======");
 	}
 
 	private int getRoundsRemaining() {
-		return mRounds.size() - mCurrentRound;
+		return getRounds().size() - getCurrentRound();
 	}
 
 	private ArrayList<Integer> getOccupiedLocations() {
-		ArrayList<Integer> result = new ArrayList();
+		ArrayList<Integer> result = new ArrayList<>();
 
-		for (ScotlandYardPlayer p: mScotlandYardPlayers) {
-			if(!p.colour().isMrX()) {
-				result.add(p.location());
+		for (ScotlandYardPlayer player: getScotlandYardPlayers()) {
+			if (player.isDetective()) {
+				result.add(player.location());
 			}
 		}
 
@@ -403,8 +361,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 			Ticket ticket = Ticket.fromTransport(transport);
 
 			// enable special flags for Mr. X
-			Boolean canSecret = colour.isMrX() && player.hasTickets(Secret);
-			Boolean canDouble = colour.isMrX() && player.hasTickets(Double) && getRoundsRemaining() >= 2;
+			Boolean canSecret = player.isMrX() && player.hasTickets(Secret);
+			Boolean canDouble = player.isMrX() && player.hasTickets(Double) && getRoundsRemaining() >= 2;
 
 			// TODO: refactor the repetitive code here
 			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
@@ -464,46 +422,45 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	public List<Colour> getPlayers() {
 		ArrayList<Colour> players = new ArrayList<>();
 
-		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
+		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
 			players.add(player.colour());
 		}
 
 		return Collections.unmodifiableList(players);
 	}
 
-	private int updateLastRevealed () {
-		setRevealed();
-		mLastRevealedBlack = getMrX().location();
-
-		return mLastRevealedBlack;
+	// overloaded version to check if it will be a reveal round in x rounds from now
+	public boolean isRevealRound(int x) {
+		x--; // accommodate zero-indexing of getRounds()
+		int currentRound = getCurrentRound();
+		return getRounds().size() > (currentRound + x)
+				&& getRounds().get(currentRound + x);
 	}
-
 
 	@Override
 	public boolean isRevealRound() {
-		if (checkRevealed()) {
-			return getRounds().get(getCurrentRound() - 1);
-		} else {
-			int currentRound = getCurrentRound();
-			return 	(
-					mTotalTurnsPlayed != 0
-					&& currentRound > 0
-					&& currentRound - 1 < getRounds().size()
-					&& getRounds().get(currentRound - 1)
-			);
-		}
+		return isRevealRound(0);
 	}
 
 	@Override
 	public int getPlayerLocation(Colour colour) {
-		if (colour.isMrX()) {
-			if (isRevealRound())
-				updateLastRevealed();
+		ScotlandYardPlayer player = getPlayerInstanceByColour(colour);
+		int location = player.location();
 
-			return mLastRevealedBlack;
+		if (player.isMrX()) {
+			if (getCurrentRound() == 0 || !isRevealRound()) return getLastRevealedBlack();
+			else setLastRevealedBlack(location);
 		}
 
-		return getPlayerInstanceByColour(colour).location();
+		return location;
+	}
+
+	private int getLastRevealedBlack(){
+		return this.mLastRevealedBlack;
+	}
+
+	private void setLastRevealedBlack(int n){
+		this.mLastRevealedBlack = n;
 	}
 
 	@Override
@@ -512,14 +469,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private boolean allDetectivesAreTicketless() {
-		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			if (player.colour().isDetective()) {
-				if (player.hasTickets(Bus)) return false;
-				if (player.hasTickets(Taxi)) return false;
-				if (player.hasTickets(Underground)) return false;
-				//if (player.hasTickets(Double)) return false; // Detectives should never have Double tickets
-				//if (player.hasTickets(Secret)) return false; // Detectives should never have Secret tickets
-			}
+		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
+			if (player.isDetective() && !player.tickets().isEmpty()) return false;
 		}
 
 		return true;
@@ -528,10 +479,12 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private boolean noDetectivesHaveValidMoves() {
 		boolean result = true;
 
-		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			if (player.colour().isDetective()) {
+		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
+			if (player.isDetective()) {
 				PassMove passMove = new PassMove(player.colour());
-				result &= getValidMoves(player).contains(passMove); // if this is false once, then at least one Detective isn't stuck
+
+				// if this is false once, then at least one Detective isn't stuck
+				result &= getValidMoves(player).contains(passMove);
 			}
 		}
 
@@ -554,8 +507,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		boolean result = false;
 
 		ScotlandYardPlayer mrX = getMrX();
-		for (ScotlandYardPlayer player : mScotlandYardPlayers) {
-			result = result || (player.colour() != mrX.colour() && mrX.location() == player.location()); // if this is true once, then Mr. X has been captured
+		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
+			result |= (player.colour() != mrX.colour() && mrX.location() == player.location()); // if this is true once, then Mr. X has been captured
 		}
 
 		return result;
@@ -566,54 +519,58 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return Collections.unmodifiableSet(mWinningPlayers);
 	}
 
-	private Set<Colour> populateSetWithWinningPlayers(Set<Colour> set) {
-		for (ScotlandYardPlayer player : mScotlandYardPlayers)
-			if ((player.isDetective() && mDetectivesWin) || (player.isMrX() && mMrXWins))
-				set.add(player.colour());
-
-		return set;
+	private void populateWinningPlayersSet(boolean winnerIsMrX) {
+		for (Colour player : getPlayers())
+			if ((player.isDetective() && !winnerIsMrX) || (player.isMrX() && winnerIsMrX))
+				this.mWinningPlayers.add(player);
 	}
 
-	private boolean mDetectivesWin = false;
-	private boolean mMrXWins = false;
-
 	private void notifyGameOver() {
-		if((mMrXWins || mDetectivesWin) && haveSpectators() && !mGameOverNotified){
+		if(canNotifySpectators()){
 			for (Spectator spectator : getSpectators()) {
 				spectator.onGameOver(this, getWinningPlayers());
-				DEBUG_PRINT("GAME OVER");
 			}
-			mGameOverNotified = true;
+			DEBUG_PRINT("GAME OVER");
+			sentGameOverNotification();
 		}
 	}
 
 	@Override
 	public boolean isGameOver() {
-		// MR.X WINS
+		boolean mrXWon;
+
 		if (allDetectivesAreTicketless() || noDetectivesHaveValidMoves() || allRoundsAreUsedUp()) {
-			mMrXWins = true;
+			mrXWon = true;
+		} else if (mrXIsStuck() || mrXIsCaptured()){
+			mrXWon = false;
+		} else {
+			return false;
 		}
 
-		// DETECTIVES WIN
-		if (mrXIsStuck() || mrXIsCaptured()){
-			mDetectivesWin = true;
-		}
-
-		mWinningPlayers = populateSetWithWinningPlayers(mWinningPlayers);
+		populateWinningPlayersSet(mrXWon);
 
 		notifyGameOver();
 
-		return mMrXWins || mDetectivesWin;
+		return true;
 	}
 
 	@Override
 	public Colour getCurrentPlayer() {
-		return mScotlandYardPlayers.get(mCurrentRoundTurnsPlayed).colour();
+		return getPlayers().get(getCurrentTurn());
+	}
+
+	public int getCurrentTurn() {
+		return this.mCurrentTurn;
 	}
 
 	@Override
 	public int getCurrentRound() {
-		return mCurrentRound;
+		return this.mCurrentRound;
+	}
+
+	private int incrementCurrentRound() {
+		this.mCurrentRound = getCurrentRound() + 1;
+		return getCurrentRound();
 	}
 
 	@Override
@@ -626,42 +583,31 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return new ImmutableGraph<>(mGraph);
 	}
 
-	/// SPECTATORS
-
-	private List<Spectator> mSpectators = new ArrayList<>();
-	// Refer to:
-	// https://www.ole.bris.ac.uk/bbcswebdav/courses/COMS10001_2016/students/model/index.html#Game_sequence
-	// for order of spectator notifications
-
 	@Override
 	public Collection<Spectator> getSpectators() {
-		// TODO: implement
-
 		return Collections.unmodifiableList(requireNonNull(mSpectators));
 	}
 
 	@Override
 	public void registerSpectator(Spectator spectator) {
-		// TODO: implement
 		requireNonNull(spectator);
 
-		if (mSpectators.contains(spectator)) {
+		if (getSpectators().contains(spectator)) {
 			throw new IllegalArgumentException("Spectator already registered");
 		}
 
-		mSpectators.add(spectator);
+		this.mSpectators.add(spectator);
 	}
 
 	@Override
 	public void unregisterSpectator(Spectator spectator) {
-		// TODO: implement
 		requireNonNull(spectator);
 
-		if (!mSpectators.contains(spectator)) {
+		if (!getSpectators().contains(spectator)) {
 			throw new IllegalArgumentException("Spectator has not been registered");
 		}
 
-		mSpectators.remove(spectator);
+		this.mSpectators.remove(spectator);
 	}
 
 }
