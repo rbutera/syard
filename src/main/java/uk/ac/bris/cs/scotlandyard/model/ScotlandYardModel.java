@@ -160,7 +160,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private void incrementTotalPlayers() {
-		this.mTotalPlayers++;
+		this.mTotalPlayers = getTotalPlayers() + 1;
 	}
 
 	private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
@@ -237,16 +237,16 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		boolean isRevealRoundInTwoRounds = isRevealRound(2);
 
 		if (isRevealRoundInOneRound && isRevealRoundInTwoRounds) {
-			// the next round and the around after are both reveal rounds
+			// the next two rounds are both reveal rounds
 			maskedDoubleMove(player, firstTicket, firstDestination, secondTicket, secondDestination);
-		} else if (isRevealRoundInOneRound && !isRevealRoundInTwoRounds) {
+		} else if (isRevealRoundInOneRound) {
 			// the next round is a reveal round and the round after is a hidden round
 			maskedDoubleMove(player, firstTicket, firstDestination, secondTicket, firstDestination, secondDestination);
-		} else if (!isRevealRoundInOneRound && isRevealRoundInTwoRounds) {
+		} else if (isRevealRoundInTwoRounds) {
 			// the next round is a hidden round and the round after is a reveal round
 			maskedDoubleMove(player, firstTicket, currentLocation, firstDestination, secondTicket, secondDestination);
 		} else {
-			// the next round and the round after are both hidden rounds
+			// the next two rounds are both hidden rounds
 			maskedDoubleMove(player, firstTicket, currentLocation, firstDestination, secondTicket, currentLocation, secondDestination);
 		}
 	}
@@ -336,73 +336,74 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return result;
 	}
 
+	private int getDestinationFromEdge(Edge<Integer, Transport> edge) {
+		return edge.destination().value();
+	}
 
+	private Ticket getTicketFromEdge(Edge<Integer, Transport> edge) {
+		return fromTransport(edge.data());
+	}
+
+	private boolean canSecret(ScotlandYardPlayer player) {
+		return player.hasTickets(Secret);
+	}
+
+	private boolean canDouble(ScotlandYardPlayer player) {
+		return player.hasTickets(Double) && getRoundsRemaining() >= 2;
+	}
+
+	private Collection<Edge<Integer, Transport>> getOptionsFromLocation(Integer location) {
+		return getGraph().getEdgesFrom(getGraph().getNode(location));
+	}
+
+	// TODO: refactor
 	private Set<Move> getValidMoves(ScotlandYardPlayer player) {
 		Set<Move> moves = new HashSet<>();
 
 		Colour colour = player.colour();
-		int location = player.location();
+		Integer location = player.location();
 
-		// get currently occupied spaces to prevent offering collision-inducing moves
 		ArrayList<Integer> occupied = getOccupiedLocations();
+		Collection<Edge<Integer, Transport>> options = getOptionsFromLocation(location);
 
-		// use the node of the player's current location to find potential move options
-		Collection<Edge<Integer, Transport>> options = mGraph.getEdgesFrom(mGraph.getNode(location));
+		// enable special flags for Mr. X
+		Boolean canSecret = canSecret(player);
+		Boolean canDouble = canDouble(player);
 
-		// iterate through the potential move options and add ones considered valid
 		for (Edge<Integer, Transport> edge : options) {
-			// extract the current edge's transport and destination node
-			Transport transport = edge.data();
-			Node<Integer> destinationNode = edge.destination();
+			int destination = getDestinationFromEdge(edge);
+			Ticket ticket = getTicketFromEdge(edge);
 
-			// extract the destination value from the destination node of this edge
-			Integer destination = destinationNode.value();
-			// extract the ticket from the given transport of this edge
-			Ticket ticket = Ticket.fromTransport(transport);
-
-			// enable special flags for Mr. X
-			Boolean canSecret = player.isMrX() && player.hasTickets(Secret);
-			Boolean canDouble = player.isMrX() && player.hasTickets(Double) && getRoundsRemaining() >= 2;
-
-			// TODO: refactor the repetitive code here
 			if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
-				TicketMove move = new TicketMove(colour, ticket, destination);
-				moves.add(move);
+				moves.add(new TicketMove(colour, ticket, destination));
 
 				if (canSecret) {
-					TicketMove secretMove = new TicketMove(colour, Secret, destination);
-					moves.add(secretMove);
+					moves.add(new TicketMove(colour, Secret, destination));
 				}
 
 				if (canDouble) {
 					// generate collection of double-turn tickets (edges)
-					Collection<Edge<Integer, Transport>> moreOptions = mGraph.getEdgesFrom(mGraph.getNode(destination));
+					Collection<Edge<Integer, Transport>> moreOptions = getOptionsFromLocation(destination);
 
 					for (Edge<Integer, Transport> secondEdge : moreOptions) {
-						Transport secondTransport = secondEdge.data();
-						Node<Integer> secondDestinationNode = secondEdge.destination();
-						Integer secondDestination = secondDestinationNode.value();
-						Ticket secondTicket = Ticket.fromTransport(secondTransport);
+						int secondDestination = getDestinationFromEdge(secondEdge);
+						Ticket secondTicket = getTicketFromEdge(secondEdge);
 
 						if (!occupied.contains(secondDestination) || secondDestination == location && player.hasTickets(secondTicket)) {
 							if (ticket != secondTicket || player.hasTickets(ticket, 2)) {
-								DoubleMove doubleMove = new DoubleMove(colour, ticket, destination, secondTicket, secondDestination);
-								moves.add(doubleMove);
+								moves.add(new DoubleMove(colour, ticket, destination, secondTicket, secondDestination));
 							}
 
 							if (canSecret) {
 								// add moves for use of a secret ticket first
-								DoubleMove doubleSecretFirstMove = new DoubleMove(colour, Secret, destination, secondTicket, secondDestination);
-								moves.add(doubleSecretFirstMove);
+								moves.add(new DoubleMove(colour, Secret, destination, secondTicket, secondDestination));
 
 								// add moves for use of a secret ticket second
-								DoubleMove doubleSecretSecondMove = new DoubleMove(colour, ticket, destination, Secret, secondDestination);
-								moves.add(doubleSecretSecondMove);
+								moves.add(new DoubleMove(colour, ticket, destination, Secret, secondDestination));
 
 								// add moves for use of two secret tickets
 								if (player.hasTickets(Secret, 2)) {
-									DoubleMove doubleSecretCombo = new DoubleMove(colour, Secret, destination, Secret, secondDestination);
-									moves.add(doubleSecretCombo);
+									moves.add(new DoubleMove(colour, Secret, destination, Secret, secondDestination));
 								}
 							}
 						}
@@ -469,9 +470,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	}
 
 	private boolean allDetectivesAreTicketless() {
-		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
-			if (player.isDetective() && !player.tickets().isEmpty()) return false;
-		}
+		for (ScotlandYardPlayer player : getScotlandYardPlayers())
+			if (player.isDetective() && !player.tickets().isEmpty())
+				return false;
 
 		return true;
 	}
@@ -479,14 +480,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 	private boolean noDetectivesHaveValidMoves() {
 		boolean result = true;
 
-		for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
-			if (player.isDetective()) {
-				PassMove passMove = new PassMove(player.colour());
-
-				// if this is false once, then at least one Detective isn't stuck
-				result &= getValidMoves(player).contains(passMove);
-			}
-		}
+		for (ScotlandYardPlayer player : getScotlandYardPlayers())
+			if (player.isDetective())
+				result &= getValidMoves(player).contains(new PassMove(player.colour()));
 
 		return result;
 	}
@@ -559,7 +555,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 		return getPlayers().get(getCurrentTurn());
 	}
 
-	public int getCurrentTurn() {
+	private int getCurrentTurn() {
 		return this.mCurrentTurn;
 	}
 
