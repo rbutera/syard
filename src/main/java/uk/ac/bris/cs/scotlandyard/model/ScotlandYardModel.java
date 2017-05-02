@@ -22,6 +22,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private Set<Colour> mWinningPlayers = new HashSet<>();
     private int mCurrentRound = NOT_STARTED;
     private int mCurrentTurn = 0;
+    private int mTurnsLeftForCurrentPlayer = 0;
     private int mTotalPlayers = 0;
     private int mLastRevealedBlack = 0;
     private boolean mGameOverNotificationSent = false;
@@ -135,12 +136,35 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return null;
     }
 
+    private boolean waitForSecondMove() {
+        return mTurnsLeftForCurrentPlayer > 0;
+    }
+
+    private void waitForSecondMove(boolean shouldWait) {
+        if (shouldWait) {
+            mTurnsLeftForCurrentPlayer++;
+            DEBUG_PRINT("waiting for second move...");
+        } else {
+            mTurnsLeftForCurrentPlayer--;
+        }
+    }
+
     private void setCurrentTurn(int n) {
         this.mCurrentTurn = n;
     }
 
     private void endTurn() {
-        setCurrentTurn(getCurrentTurn() + 1);
+        String endTurnDebug = "ROUND/TURN " + getCurrentRound() + "/" + getCurrentTurn() + " END. ";
+        if (waitForSecondMove()) {
+            endTurnDebug += mTurnsLeftForCurrentPlayer + " remain.";
+        }
+
+        DEBUG_PRINT(endTurnDebug);
+        if(!waitForSecondMove()){
+            setCurrentTurn(getCurrentTurn() + 1);
+        } else {
+            waitForSecondMove(false);
+        }
 
         if (getCurrentTurn() >= getTotalPlayers()) {
             notifyRotationComplete();
@@ -153,6 +177,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         } else {
             requestNextMove();
         }
+
     }
 
     private int getTotalPlayers() {
@@ -165,9 +190,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
         DoubleMove doubleMove = new DoubleMove(player.colour(), firstTicket, firstDestination, secondTicket, secondDestination);
-
         notifyMove(doubleMove);
-
+        waitForSecondMove(true);
         performTicketMove(player, doubleMove.firstMove(), trueFirstDestination);
         performTicketMove(player, doubleMove.secondMove(), trueSecondDestination);
     }
@@ -195,31 +219,35 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         if (canNotifySpectators()) {
             for (Spectator spectator : getSpectators()) {
                 spectator.onMoveMade(this, move);
+            }
+            if (move instanceof TicketMove) {
                 String colour;
                 switch (move.colour()) {
-                    case Black:
-                        colour = "Black";
-                        break;
-                    case Red:
-                        colour = "Red";
-                        break;
-                    case Yellow:
-                        colour = "Yellow";
-                        break;
-                    case Green:
-                        colour = "Green";
-                        break;
-                    case Blue:
-                        colour = "Blue";
-                        break;
-                    case White:
-                        colour = "Privileged";
-                        break;
-                    default:
-                        colour = "unknown";
-                        break;
-                }
-                DEBUG_PRINT(" -> " + colour + "'s turn");
+                        case Black:
+                            colour = "Black";
+                            break;
+                        case Red:
+                            colour = "Red";
+                            break;
+                        case Yellow:
+                            colour = "Yellow";
+                            break;
+                        case Green:
+                            colour = "Green";
+                            break;
+                        case Blue:
+                            colour = "Blue";
+                            break;
+                        case White:
+                            colour = "Privileged";
+                            break;
+                        default:
+                            colour = "unknown";
+                            break;
+                    }
+                DEBUG_PRINT("" + colour);
+            } else if (move instanceof DoubleMove) {
+                DEBUG_PRINT("2X");
             }
         }
     }
@@ -257,6 +285,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         player.removeTicket(ticket);
         player.location(trueDestination);
+        DEBUG_PRINT("    " + player.colour() + " -> " + trueDestination);
 
         if (player.isMrX()) notifyRound(incrementCurrentRound());
         if (player.isDetective()) getMrX().addTicket(ticket);
@@ -302,7 +331,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                 spectator.onRotationComplete(this);
             }
         }
-        DEBUG_PRINT("====== END ROUND ======");
     }
 
     @Override
@@ -553,7 +581,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public Colour getCurrentPlayer() {
-        return getPlayers().get(getCurrentTurn());
+        List<Colour> players = getPlayers();
+        int turn = getCurrentTurn();
+
+        return players.get(turn);
     }
 
     private int getCurrentTurn() {
