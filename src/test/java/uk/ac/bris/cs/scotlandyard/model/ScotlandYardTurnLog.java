@@ -2,9 +2,11 @@ package uk.ac.bris.cs.scotlandyard.model;
 
 import java.util.ArrayList;
 
+import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
+
 public class ScotlandYardTurnLog {
-    ArrayList<ScotlandYardTurn> mContents = new ArrayList<ScotlandYardTurn>();
-    ArrayList<Colour> mOrder = new ArrayList<Colour>();
+    List<ScotlandYardTurn> mContents = Lists.newArrayList();
+    List<Colour> mOrder = Lists.newArrayList();
 
     private int mPlayersTotal = 0;
 
@@ -12,11 +14,29 @@ public class ScotlandYardTurnLog {
         return mContents;
     }
 
+    public int printOrder () {
+        System.out.printf("Turn order is ");
+        for (int i = 0; i < mOrder.size(); i++) {
+            System.out.printf("%s", mOrder.get(i));
+            if(i < (mOrder.size() - 1)){
+                System.out.printf(", ");
+            } else {
+                System.out.printf(".\n");
+            }
+        }
+    }
+
     public ScotlandYardTurnLog(ArrayList<Colour> playerOrder) {
         requireNonNull(playerOrder);
         if(playerOrder.size() > 0) {
             mPlayersTotal = playerOrder.size();
             System.out.println("        BEGIN LOG...    (" + playerOrder.size() + " players");
+            if(playerOrder.get(0) != Black){
+                throw new IllegalArgumentException("Invalid player order - should start with Black");
+            } else {
+                mOrder.addAll(playerOrder);
+                printOrder();
+            }
         } else {
             throw new IllegalArgumentException("Cannot create a ScotlandYardTurnLog for a non-positive quantity of players! (was given" + playerOrder.size() + " )");
         }
@@ -37,7 +57,7 @@ public class ScotlandYardTurnLog {
      */
     public ScotlandYardTurn latest() {
         //TODO(rb): implement this!!
-        throw new IllegalArgumentException("implement latestTurn!")
+        throw new IllegalArgumentException("implement latestTurn!");
     }
 
     /**
@@ -53,6 +73,10 @@ public class ScotlandYardTurnLog {
         } else {
             return index;
         }
+    }
+
+    public ScotlandYardTurn scanForLast () {
+
     }
 
     public ScotlandYardTurn nextColour() {
