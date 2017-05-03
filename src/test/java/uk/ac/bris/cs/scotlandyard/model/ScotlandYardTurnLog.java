@@ -76,20 +76,21 @@ public class ScotlandYardTurnLog {
     }
 
     public ScotlandYardTurn scanForLast () {
-
+        //TODO(rb): implement this!
+        throw new IllegalArgumentException("implement scanForLast");
     }
 
-    public ScotlandYardTurn nextColour() {
+    public Colour nextColour() {
         //TODO(rb): implement this!!
         throw new IllegalArgumentException("implement SYTL.nextPlayer!");
     }
 
-    public ScotlandYardTurn nextRound() {
+    public int nextRound() {
         //TODO(rb): implement this!!
         throw new IllegalArgumentException("implement SYTL.nextRound!");
     }
 
-    public ScotlandYardTurn nextTurn() {
+    public int nextTurn() {
         //TODO(rb): implement this!!
         throw new IllegalArgumentException("implement SYTL.nextTurn!");
     }
