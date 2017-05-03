@@ -8,9 +8,8 @@ import java.util.*;
 import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
-import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
+import static uk.ac.bris.cs.scotlandyard.model.Colour.*;
 import static uk.ac.bris.cs.scotlandyard.model.Ticket.*;
-import static uk.ac.bris.cs.scotlandyard.model.Ticket.Double;
 
 
 // TODO implement all methods and pass all tests
@@ -19,13 +18,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private List<Boolean> mRounds;
     private Graph<Integer, Transport> mGraph;
     private ArrayList<ScotlandYardPlayer> mScotlandYardPlayers = new ArrayList<>();
+    private ArrayList<Colour> mPlayers = new ArrayList<>();
     private Set<Colour> mWinningPlayers = new HashSet<>();
     private int mCurrentRound = NOT_STARTED;
-    private int mCurrentTurn = 0;
     private int mTurnsLeftForCurrentPlayer = 0;
     private int mTotalPlayers = 0;
     private int mLastRevealedBlack = 0;
     private boolean mGameOverNotificationSent = false;
+    private ScotlandYardTurnLog mTurnLog;
     private List<Spectator> mSpectators = new ArrayList<>();
 
     private boolean DEBUG_ENABLED = true;
@@ -122,7 +122,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             // populate mScotlandYardPlayers with ScotlandYardPlayers derived from configurations
             addScotlandYardPlayer(new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets));
             incrementTotalPlayers();
+
+            addPlayer(config.colour);
         }
+        this.mTurnLog = new ScotlandYardTurnLog(mPlayers);
+    }
+
+    private void addPlayer(Colour colour) {
+        this.mPlayers.add(colour);
     }
 
     private void addScotlandYardPlayer(ScotlandYardPlayer player) {
@@ -149,37 +156,32 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         }
     }
 
-    private void setCurrentTurn(int n) {
-        this.mCurrentTurn = n;
-    }
-
-    private void endTurn() {
+    private void DEBUG_ENDTURN() {
         String endTurnDebug = "ROUND/TURN " + getCurrentRound() + "/" + getCurrentTurn() + " END. ";
         if (waitForSecondMove()) {
             endTurnDebug += mTurnsLeftForCurrentPlayer + " remain.";
         } else {
-            endTurnDebug += " turn complete, no need to wait."
+            endTurnDebug += " turn complete, no need to wait.";
         }
 
         DEBUG_PRINT(endTurnDebug);
-        if(!waitForSecondMove()){
-            setCurrentTurn(getCurrentTurn() + 1);
-        } else {
-            waitForSecondMove(false);
-        }
+    }
+
+    private void startTurn(Move move) {
+        // start a new turn and log its creation
+        mTurnLog.add(move, getCurrentRound());
+        DEBUG_PRINT("Starting turn " + getCurrentTurn());
+    }
+
+    private void endTurn() {
+        DEBUG_ENDTURN();
 
         if (getCurrentTurn() >= getTotalPlayers()) {
             notifyRotationComplete();
-
-            if (getRoundsRemaining() == 0) {
-                isGameOver();
-            }
-
-            setCurrentTurn(0);
+            if (getRoundsRemaining() == 0) isGameOver();
         } else {
             requestNextMove();
         }
-
     }
 
     private int getTotalPlayers() {
@@ -217,6 +219,19 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return !getSpectators().isEmpty() && !isGameOverNotificationSent();
     }
 
+    private void DEBUG_NOTFIYMOVE(Move move) {
+        if (move instanceof TicketMove || move instanceof DoubleMove) {
+            String colour;
+            colour = move.colour().toString();
+
+            if (move instanceof TicketMove) {
+                DEBUG_PRINT(getCurrentRound() + "/" + getCurrentTurn() + "    TM: " + colour);
+            } else {
+                DEBUG_PRINT(getCurrentRound() + "/" + getCurrentTurn() + "    2X" +
+                        ": " + colour);
+            }
+        }
+    }
 
     private void notifyMove(Move move) {
         if (canNotifySpectators()) {
@@ -224,17 +239,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
                 spectator.onMoveMade(this, move);
             }
 
-            if (move instanceof TicketMove || move instanceof DoubleMove) {
-                String colour;
-                colour = move.colour().toString();
-
-                if (move instanceof TicketMove) {
-                    DEBUG_PRINT(mCurrentRound + "/" + mCurrentTurn + "    TM: " + colour);
-                } else {
-                    DEBUG_PRINT(mCurrentRound + "/" + mCurrentTurn + "    2X" +
-                            ": " + colour);
-                }
-            }
+            DEBUG_NOTFIYMOVE(move);
         }
     }
 
@@ -289,6 +294,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         if (move instanceof TicketMove) performTicketMove(player, (TicketMove) move);
         else if (move instanceof DoubleMove) performDoubleMove(player, (DoubleMove) move);
         else if (move instanceof PassMove) notifyMove(move);
+        DEBUG_PRINT("Before startTurn is called, round =" + getCurrentRound());
+        startTurn(move);
     }
 
     private void requestNextMove() {
@@ -436,13 +443,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public List<Colour> getPlayers() {
-        ArrayList<Colour> players = new ArrayList<>();
-
-        for (ScotlandYardPlayer player : getScotlandYardPlayers()) {
-            players.add(player.colour());
-        }
-
-        return Collections.unmodifiableList(players);
+        return Collections.unmodifiableList(mPlayers);
     }
 
     // overloaded version to check if it will be a reveal round in x rounds from now
@@ -567,14 +568,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public Colour getCurrentPlayer() {
-        List<Colour> players = getPlayers();
-        int turn = getCurrentTurn();
-
-        return players.get(turn);
+        return getPlayers().get(getCurrentTurn());
     }
 
     private int getCurrentTurn() {
-        return this.mCurrentTurn;
+        return mTurnLog.mContents.size();
     }
 
     @Override
