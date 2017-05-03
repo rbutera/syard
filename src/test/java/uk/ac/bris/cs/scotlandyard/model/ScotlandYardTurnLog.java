@@ -4,13 +4,20 @@ import java.util.ArrayList;
 
 public class ScotlandYardTurnLog {
     ArrayList<ScotlandYardTurn> mContents = new ArrayList<ScotlandYardTurn>();
+    public int mPlayersTotal = 0;
 
     public ArrayList<ScotlandYardTurn> getContents() {
         return mContents;
     }
 
-    public ScotlandYardTurnLog() {
-        System.out.println("        BEGIN LOG...    ");
+    public ScotlandYardTurnLog(int maxPlayers) {
+        requireNonNull(maxPlayers);
+        if(maxPlayers > 0) {
+            mPlayersTotal = maxPlayers;
+            System.out.println("        BEGIN LOG...    (" + maxPlayers + " players");
+        } else {
+            throw new IllegalArgumentException("Cannot create a ScotlandYardTurnLog for a non-positive quantity of players!");
+        }
     }
 
     /**
