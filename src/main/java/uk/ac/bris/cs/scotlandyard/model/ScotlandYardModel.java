@@ -157,6 +157,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         String endTurnDebug = "ROUND/TURN " + getCurrentRound() + "/" + getCurrentTurn() + " END. ";
         if (waitForSecondMove()) {
             endTurnDebug += mTurnsLeftForCurrentPlayer + " remain.";
+        } else {
+            endTurnDebug += " turn complete, no need to wait."
         }
 
         DEBUG_PRINT(endTurnDebug);
@@ -215,39 +217,23 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return !getSpectators().isEmpty() && !isGameOverNotificationSent();
     }
 
+
     private void notifyMove(Move move) {
         if (canNotifySpectators()) {
             for (Spectator spectator : getSpectators()) {
                 spectator.onMoveMade(this, move);
             }
-            if (move instanceof TicketMove) {
+
+            if (move instanceof TicketMove || move instanceof DoubleMove) {
                 String colour;
-                switch (move.colour()) {
-                        case Black:
-                            colour = "Black";
-                            break;
-                        case Red:
-                            colour = "Red";
-                            break;
-                        case Yellow:
-                            colour = "Yellow";
-                            break;
-                        case Green:
-                            colour = "Green";
-                            break;
-                        case Blue:
-                            colour = "Blue";
-                            break;
-                        case White:
-                            colour = "Privileged";
-                            break;
-                        default:
-                            colour = "unknown";
-                            break;
-                    }
-                DEBUG_PRINT("" + colour);
-            } else if (move instanceof DoubleMove) {
-                DEBUG_PRINT("2X");
+                colour = move.colour().toString();
+
+                if (move instanceof TicketMove) {
+                    DEBUG_PRINT(mCurrentRound + "/" + mCurrentTurn + "    TM: " + colour);
+                } else {
+                    DEBUG_PRINT(mCurrentRound + "/" + mCurrentTurn + "    2X" +
+                            ": " + colour);
+                }
             }
         }
     }
