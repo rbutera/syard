@@ -2,20 +2,20 @@ package uk.ac.bris.cs.scotlandyard.model;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static uk.ac.bris.cs.scotlandyard.model.Colour.Black;
 
 public class ScotlandYardTurnLog {
-    List<ScotlandYardTurn> mContents = new ArrayList<ScotlandYardTurn>();
-    List<Colour> mOrder = new ArrayList<Colour>();
+    List<ScotlandYardTurn> mContents = new ArrayList<>();
+    List<Colour> mOrder = new ArrayList<>();
 
-    public void printOrder () {
+    public void DEBUG_PRINTORDER() {
+        System.out.println("LOG BEGIN (" + mOrder.size() + " players)");
         System.out.printf("Turn order is ");
         for (int i = 0; i < mOrder.size(); i++) {
             System.out.printf("%s", mOrder.get(i));
@@ -29,22 +29,19 @@ public class ScotlandYardTurnLog {
 
     public ScotlandYardTurnLog(ArrayList<Colour> playerOrder) {
         requireNonNull(playerOrder);
-        if(playerOrder.size() > 0) {
-            System.out.println("        BEGIN LOG...    (" + playerOrder.size() + " players");
-            if(playerOrder.get(0) != Black){
-                throw new IllegalArgumentException("Invalid player order - should start with Black");
-            } else {
-                mOrder.addAll(playerOrder);
-                printOrder();
-            }
-        } else {
-            throw new IllegalArgumentException("Cannot create a ScotlandYardTurnLog for a non-positive quantity of players! (was given" + playerOrder.size() + " )");
-        }
+        if (!(playerOrder.size() > 0)) throw new IllegalArgumentException("Positive quantity of players required! Got: " + playerOrder.size());
+        if (!playerOrder.get(0).isMrX()) throw new IllegalArgumentException("First player should be Mr. X!");
+
+        mOrder.addAll(playerOrder);
+
+        DEBUG_PRINTORDER();
     }
 
-    public ScotlandYardTurn latestX (Predicate<ScotlandYardTurn> filterFn) {
-        List<ScotlandYardTurn> reversed = Lists.reverse(mContents).stream().filter(filterFn).collect(Collectors.toList());
-        return reversed.get(0);
+    public ScotlandYardTurn latestX(Predicate<ScotlandYardTurn> filterFn) {
+        List<ScotlandYardTurn> reversed = Lists.reverse(mContents);
+        Iterable<ScotlandYardTurn> filtered = Iterables.filter(reversed, filterFn);
+
+        return Iterables.getFirst(filtered, new ScotlandYardTurn(this, -1,"PassMove", Colour.Black,-1, -1, -1,-1,-1, false));
     }
 
     /**
@@ -60,11 +57,11 @@ public class ScotlandYardTurnLog {
     }
 
     private int getOrigin(Colour colour) {
-        if (mContents.isEmpty()) {
-            return 0;
-        } else {
+        if (!mContents.isEmpty()) {
             return lastOfColour(colour).getDestination();
         }
+
+        return 0;
     }
 
     /**
@@ -76,20 +73,18 @@ public class ScotlandYardTurnLog {
     }
 
     private int generateDoubleIndex (){
-        int result;
         int lastDoubleIndex = latest().getDoubleIndex();
         boolean lastPartOfDouble = latest().isPartOfDouble();
 
         if(lastPartOfDouble && lastDoubleIndex < 2){
-            result = lastDoubleIndex + 1;
-        } else {
-            result = 0;
+            return lastDoubleIndex + 1;
         }
-        return result;
+
+        return 0;
     }
     /**
      * adds a new entry to the log
-     * @param input the new entry to be added
+     * @param move the new entry to be added
      * @return the index of the new log entry, if appropriate
      */
     public int add(Move move, int round) {
@@ -100,19 +95,17 @@ public class ScotlandYardTurnLog {
 
         requireNonNull(round);
         Colour colour = move.colour();
-        //if (round <= 0 || round < latest().getRound()){
-        //    throw new IllegalArgumentException("invalid round passed - expected at least " + latest().getRound() + " but received " + round);
-        //}
 
         origin = getOrigin(colour);
+        if (origin < 0) {
+            origin = 0;
+        }
         if(move instanceof TicketMove){
             moveType = "TicketMove";
             TicketMove casted = (TicketMove) move;
             destination = casted.destination();
-
         } else {
             destination = origin;
-
             if (move instanceof PassMove){
                 moveType = "PassMove";
             } else if (move instanceof DoubleMove){
@@ -150,6 +143,10 @@ public class ScotlandYardTurnLog {
     public int nextTurn() {
         //TODO(rb): implement this!!
         throw new IllegalArgumentException("implement SYTL.nextTurn!");
+    }
+
+    public List<ScotlandYardTurn> getContents() {
+        return mContents;
     }
 
     /**

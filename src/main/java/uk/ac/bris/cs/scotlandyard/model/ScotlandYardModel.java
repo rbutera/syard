@@ -21,8 +21,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private ArrayList<Colour> mPlayers = new ArrayList<>();
     private Set<Colour> mWinningPlayers = new HashSet<>();
     private int mCurrentRound = NOT_STARTED;
-    private int mTurnsLeftForCurrentPlayer = 0;
-    private int mTotalPlayers = 0;
     private int mLastRevealedBlack = 0;
     private boolean mGameOverNotificationSent = false;
     private ScotlandYardTurnLog mTurnLog;
@@ -121,8 +119,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
             // populate mScotlandYardPlayers with ScotlandYardPlayers derived from configurations
             addScotlandYardPlayer(new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets));
-            incrementTotalPlayers();
-
             addPlayer(config.colour);
         }
         this.mTurnLog = new ScotlandYardTurnLog(mPlayers);
@@ -143,34 +139,16 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return null;
     }
 
-    private boolean waitForSecondMove() {
-        return mTurnsLeftForCurrentPlayer > 0;
-    }
-
-    private void waitForSecondMove(boolean shouldWait) {
-        if (shouldWait) {
-            mTurnsLeftForCurrentPlayer++;
-            DEBUG_PRINT("waiting for second move...");
-        } else {
-            mTurnsLeftForCurrentPlayer--;
-        }
-    }
 
     private void DEBUG_ENDTURN() {
-        String endTurnDebug = "ROUND/TURN " + getCurrentRound() + "/" + getCurrentTurn() + " END. ";
-        if (waitForSecondMove()) {
-            endTurnDebug += mTurnsLeftForCurrentPlayer + " remain.";
-        } else {
-            endTurnDebug += " turn complete, no need to wait.";
-        }
-
+        String endTurnDebug = "END TURN " + getCurrentTurn() + " OF ROUND "  + getCurrentRound() + ".\n";
         DEBUG_PRINT(endTurnDebug);
     }
 
     private void startTurn(Move move) {
         // start a new turn and log its creation
         mTurnLog.add(move, getCurrentRound());
-        DEBUG_PRINT("Starting turn " + getCurrentTurn());
+        DEBUG_PRINT("TURN " + getCurrentTurn() + "\n" + move.toString());
     }
 
     private void endTurn() {
@@ -178,6 +156,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         if (getCurrentTurn() >= getTotalPlayers()) {
             notifyRotationComplete();
+            mTurnLog = new ScotlandYardTurnLog(mPlayers);
             if (getRoundsRemaining() == 0) isGameOver();
         } else {
             requestNextMove();
@@ -185,17 +164,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private int getTotalPlayers() {
-        return this.mTotalPlayers;
-    }
-
-    private void incrementTotalPlayers() {
-        this.mTotalPlayers = getTotalPlayers() + 1;
+        return getPlayers().size();
     }
 
     private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
         DoubleMove doubleMove = new DoubleMove(player.colour(), firstTicket, firstDestination, secondTicket, secondDestination);
         notifyMove(doubleMove);
-        waitForSecondMove(true);
+
         performTicketMove(player, doubleMove.firstMove(), trueFirstDestination);
         performTicketMove(player, doubleMove.secondMove(), trueSecondDestination);
     }
@@ -276,7 +251,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         player.removeTicket(ticket);
         player.location(trueDestination);
-        DEBUG_PRINT("    " + player.colour() + " -> " + trueDestination);
 
         if (player.isMrX()) notifyRound(incrementCurrentRound());
         if (player.isDetective()) getMrX().addTicket(ticket);
@@ -294,7 +268,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         if (move instanceof TicketMove) performTicketMove(player, (TicketMove) move);
         else if (move instanceof DoubleMove) performDoubleMove(player, (DoubleMove) move);
         else if (move instanceof PassMove) notifyMove(move);
-        DEBUG_PRINT("Before startTurn is called, round =" + getCurrentRound());
+
         startTurn(move);
     }
 
@@ -572,7 +546,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private int getCurrentTurn() {
-        return mTurnLog.mContents.size();
+        return mTurnLog.getContents().size();
     }
 
     @Override
