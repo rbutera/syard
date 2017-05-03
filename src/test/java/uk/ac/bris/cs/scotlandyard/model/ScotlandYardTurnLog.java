@@ -1,8 +1,7 @@
 package uk.ac.bris.cs.scotlandyard.model;
 
-/**
- * Created by rai on 03/05/2017.
- */
+import java.util.ArrayList;
+
 public class ScotlandYardTurnLog {
     ArrayList<ScotlandYardTurn> mContents = new ArrayList<ScotlandYardTurn>();
 
