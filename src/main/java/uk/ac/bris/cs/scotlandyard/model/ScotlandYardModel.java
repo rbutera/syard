@@ -121,7 +121,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             addScotlandYardPlayer(new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets));
             addPlayer(config.colour);
         }
-        this.mTurnLog = new ScotlandYardTurnLog(mPlayers);
+        this.mTurnLog = new ScotlandYardTurnLog(mPlayers, getPlayerInstanceByColour(Black).location());
     }
 
     private void addPlayer(Colour colour) {

@@ -15,6 +15,12 @@ public class ScotlandYardTurnLog {
     List<ScotlandYardTurn> mContents = new ArrayList<>();
     List<Colour> mOrder = new ArrayList<>();
 
+    public void setMrXOrigin(int mrXOrigin) {
+        mMrXOrigin = mrXOrigin;
+    }
+
+    int mMrXOrigin = 0;
+
     public void DEBUG_PRINTORDER() {
         System.out.println("LOG BEGIN (" + mOrder.size() + " players)");
         System.out.printf("Turn order is ");
@@ -28,13 +34,13 @@ public class ScotlandYardTurnLog {
         }
     }
 
-    public ScotlandYardTurnLog(ArrayList<Colour> playerOrder) {
+    public ScotlandYardTurnLog(ArrayList<Colour> playerOrder, int mrXOrigin) {
         requireNonNull(playerOrder);
         if (!(playerOrder.size() > 0)) throw new IllegalArgumentException("Positive quantity of players required! Got: " + playerOrder.size());
         if (!playerOrder.get(0).isMrX()) throw new IllegalArgumentException("First player should be Mr. X!");
 
         mOrder.addAll(playerOrder);
-
+        setMrXOrigin(mrXOrigin);
         DEBUG_PRINTORDER();
     }
 
@@ -62,6 +68,8 @@ public class ScotlandYardTurnLog {
         if (!mContents.isEmpty()) {
             origin = lastOfColour(colour).getDestination();
             if (origin < 0) origin = 0;
+        } else {
+            origin = mMrXOrigin;
         }
 
         return origin;
