@@ -159,13 +159,17 @@ public class ScotlandYardTurnLog {
         // increment this by one
         // return
 
-        Predicate<ScotlandYardTurn> isTrueBlack =
-                x ->  !x.getMoveType().equals("DoubleMove")
-                                && x.getColour().equals(Colour.Black);
+        if (mContents.size() > 0) {
+            Predicate<ScotlandYardTurn> isTrueBlack =
+                    x ->  !x.getMoveType().equals("DoubleMove")
+                                    && x.getColour().equals(Colour.Black);
 
-        int turn = Collections2.filter(mContents, isTrueBlack).size();
+            int turn = Collections2.filter(mContents, isTrueBlack).size();
 
-        return turn+1;
+            return turn+1;
+        } else {
+            return ScotlandYardView.NOT_STARTED;
+        }
     }
 
     public int nextTurn() {
