@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
@@ -129,7 +130,9 @@ public class ScotlandYardTurnLog {
     }
 
     public Colour nextColour() {
-        ScotlandYardTurn latestTurn = latest();
+        ScotlandYardTurn latestTurn;
+        if (getContents().size() > 0) latestTurn = latest();
+        else return Colour.Black;
         if (latestTurn.isPartOfDouble()) {
             return latestTurn.getColour();
         } else {
@@ -149,16 +152,28 @@ public class ScotlandYardTurnLog {
     }
 
     public int nextRound() {
-        //TODO(rb): implement this!!
-        throw new IllegalArgumentException("implement SYTL.nextRound!");
+        // derive the round from the log
+        // filter out the double moves from the log's mContents
+        // count the number of black turns
+        // this is the previous round
+        // increment this by one
+        // return
+
+        Predicate<ScotlandYardTurn> isTrueBlack =
+                x ->  !x.getMoveType().equals("DoubleMove")
+                                && x.getColour().equals(Colour.Black);
+
+        int turn = Collections2.filter(mContents, isTrueBlack).size();
+
+        return turn+1;
     }
 
     public int nextTurn() {
-        int result;
+        int result = -1337;
 
         if(mContents.size() > 0) {
             ScotlandYardTurn last = latest();
-            
+
             // if last was part of a double move
                 // if the double index was less than 2
                     // return last.getTurn();

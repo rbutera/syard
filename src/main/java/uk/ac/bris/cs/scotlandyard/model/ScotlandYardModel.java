@@ -238,7 +238,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         player.removeTicket(ticket);
         player.location(trueDestination);
 
-        if (player.isMrX()) notifyRound(incrementCurrentRound());
+        if (player.isMrX()) notifyRound(getCurrentRound());
         if (player.isDetective()) getMrX().addTicket(ticket);
 
         notifyMove(move);
