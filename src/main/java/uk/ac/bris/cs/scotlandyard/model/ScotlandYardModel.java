@@ -194,27 +194,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return !getSpectators().isEmpty() && !isGameOverNotificationSent();
     }
 
-    private void DEBUG_NOTFIYMOVE(Move move) {
-        if (move instanceof TicketMove || move instanceof DoubleMove) {
-            String colour;
-            colour = move.colour().toString();
-
-            if (move instanceof TicketMove) {
-                DEBUG_PRINT(getCurrentRound() + "/" + getCurrentTurn() + "    TM: " + colour);
-            } else {
-                DEBUG_PRINT(getCurrentRound() + "/" + getCurrentTurn() + "    2X" +
-                        ": " + colour);
-            }
-        }
-    }
-
     private void notifyMove(Move move) {
         if (canNotifySpectators()) {
             for (Spectator spectator : getSpectators()) {
                 spectator.onMoveMade(this, move);
             }
 
-            DEBUG_NOTFIYMOVE(move);
+            DEBUG_PRINT(move.toString());
         }
     }
 
