@@ -541,12 +541,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public int getCurrentRound() {
+        mCurrentRound = mTurnLog.nextRound();
         return this.mCurrentRound;
-    }
-
-    private int incrementCurrentRound() {
-        this.mCurrentRound = getCurrentRound() + 1;
-        return getCurrentRound();
     }
 
     @Override
