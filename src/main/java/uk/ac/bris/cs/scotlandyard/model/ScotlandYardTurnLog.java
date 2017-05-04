@@ -129,8 +129,23 @@ public class ScotlandYardTurnLog {
     }
 
     public Colour nextColour() {
-        //TODO(rb): implement this!!
-        throw new IllegalArgumentException("implement SYTL.nextPlayer!");
+        ScotlandYardTurn latestTurn = latest();
+        if (latestTurn.isPartOfDouble()) {
+            return latestTurn.getColour();
+        } else {
+            int index = mOrder.indexOf(latestTurn);
+
+            // if we're at the last element of mOrders
+            // then the next colour should be the first element
+            // e.g. mOrders = (Black, Red, Blue)
+            // nextColour for Blue is Black
+
+            if (mOrder.size() <= (index + 1)) {
+                index = 0;
+            }
+
+            return mOrder.get(index + 1);
+        }
     }
 
     public int nextRound() {
@@ -139,8 +154,38 @@ public class ScotlandYardTurnLog {
     }
 
     public int nextTurn() {
-        //TODO(rb): implement this!!
-        throw new IllegalArgumentException("implement SYTL.nextTurn!");
+        int result;
+
+        if(mContents.size() > 0) {
+            ScotlandYardTurn last = latest();
+            
+            // if last was part of a double move
+                // if the double index was less than 2
+                    // return last.getTurn();
+                // else
+                 /* the double index == 2 so we are done adding child turns to the log and can safely move to the next turn */
+            // else
+                // get a reference to the last colour in the order
+                // if the last was the last colour in the order
+                    // black should be next, so nextTurn will be 0.
+
+            if (last.isPartOfDouble()) {
+                if (last.getDoubleIndex() < 2) {
+                    result = last.getTurn();
+                } else { // double index is 2
+                    result = last.getTurn() + 1;
+                }
+            } else { // not part of double
+                int indexOfLastInOrder = mOrder.size() - 1;
+                if (last.getColour() == mOrder.get(indexOfLastInOrder)) {
+                    result = 0;
+                } else {
+                    result = last.getTurn() + 1;
+                }
+            }
+        }
+
+        return result;
     }
 
     public List<ScotlandYardTurn> getContents() {

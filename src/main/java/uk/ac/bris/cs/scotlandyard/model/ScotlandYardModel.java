@@ -156,7 +156,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         if (getCurrentTurn() >= getTotalPlayers()) {
             notifyRotationComplete();
-            mTurnLog = new ScotlandYardTurnLog(mPlayers);
+            //mTurnLog = new ScotlandYardTurnLog(mPlayers);
             if (getRoundsRemaining() == 0) isGameOver();
         } else {
             requestNextMove();
@@ -532,11 +532,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public Colour getCurrentPlayer() {
-        return getPlayers().get(getCurrentTurn());
+        return mTurnLog.nextColour();
     }
 
     private int getCurrentTurn() {
-        return mTurnLog.getContents().size();
+        return mTurnLog.nextTurn();
     }
 
     @Override
