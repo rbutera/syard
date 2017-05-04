@@ -264,10 +264,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         performTicketMove(player, move, move.destination());
     }
 
+    private void performPassMove(PassMove move) {
+        notifyMove(move);
+    }
+
     private void performMove(ScotlandYardPlayer player, Move move) {
         if (move instanceof TicketMove) performTicketMove(player, (TicketMove) move);
         else if (move instanceof DoubleMove) performDoubleMove(player, (DoubleMove) move);
-        else if (move instanceof PassMove) notifyMove(move);
+        else if (move instanceof PassMove) performPassMove((PassMove) move);
 
         startTurn(move);
     }

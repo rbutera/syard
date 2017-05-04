@@ -57,11 +57,13 @@ public class ScotlandYardTurnLog {
     }
 
     private int getOrigin(Colour colour) {
+        int origin = 0;
         if (!mContents.isEmpty()) {
-            return lastOfColour(colour).getDestination();
+            origin = lastOfColour(colour).getDestination();
+            if (origin < 0) origin = 0;
         }
 
-        return 0;
+        return origin;
     }
 
     /**
@@ -88,18 +90,14 @@ public class ScotlandYardTurnLog {
      * @return the index of the new log entry, if appropriate
      */
     public int add(Move move, int round) {
+        requireNonNull(round);
+
         int index = mContents.size();
         String moveType;
-        int origin;
+        Colour colour = move.colour();
+        int origin = getOrigin(colour);
         int destination;
 
-        requireNonNull(round);
-        Colour colour = move.colour();
-
-        origin = getOrigin(colour);
-        if (origin < 0) {
-            origin = 0;
-        }
         if(move instanceof TicketMove){
             moveType = "TicketMove";
             TicketMove casted = (TicketMove) move;
