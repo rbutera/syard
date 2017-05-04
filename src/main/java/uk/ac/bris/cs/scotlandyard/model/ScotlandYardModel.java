@@ -39,7 +39,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private void sentGameOverNotification() {
-        this.mGameOverNotificationSent = true;
+        mGameOverNotificationSent = true;
     }
 
     private ArrayList<ScotlandYardPlayer> getScotlandYardPlayers() {
@@ -53,7 +53,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             throw new IllegalArgumentException("Empty rounds");
         }
 
-        this.mRounds = rounds;
+        mRounds = rounds;
     }
 
     private void validateAndImportGraph(Graph<Integer, Transport> graph) {
@@ -63,7 +63,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             throw new IllegalArgumentException("Empty graph");
         }
 
-        this.mGraph = graph;
+        mGraph = graph;
     }
 
     private ArrayList<PlayerConfiguration> configurePlayers(PlayerConfiguration mrX, PlayerConfiguration firstDetective, PlayerConfiguration... restOfTheDetectives) {
@@ -121,15 +121,15 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             addScotlandYardPlayer(new ScotlandYardPlayer(config.player, config.colour, config.location, config.tickets));
             addPlayer(config.colour);
         }
-        this.mTurnLog = new ScotlandYardTurnLog(mPlayers, getPlayerInstanceByColour(Black).location());
+        mTurnLog = new ScotlandYardTurnLog(mPlayers, getPlayerInstanceByColour(Black).location());
     }
 
     private void addPlayer(Colour colour) {
-        this.mPlayers.add(colour);
+        mPlayers.add(colour);
     }
 
     private void addScotlandYardPlayer(ScotlandYardPlayer player) {
-        this.mScotlandYardPlayers.add(player);
+        mScotlandYardPlayers.add(player);
     }
 
     private ScotlandYardPlayer getPlayerInstanceByColour(Colour colour) {
@@ -154,17 +154,14 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private void endTurn() {
         DEBUG_ENDTURN();
 
-        if (getCurrentTurn() >= getTotalPlayers()) {
+        if (mTurnLog.nextColour() == Black) {
             notifyRotationComplete();
-            //mTurnLog = new ScotlandYardTurnLog(mPlayers);
-            if (getRoundsRemaining() == 0) isGameOver();
+            if (isGameOver()) {
+                notifyGameOver();
+            }
         } else {
-            requestNextMove();
+            requestMove();
         }
-    }
-
-    private int getTotalPlayers() {
-        return getPlayers().size();
     }
 
     private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
@@ -238,11 +235,16 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         player.removeTicket(ticket);
         player.location(trueDestination);
 
-        if (player.isMrX()) notifyRound(getCurrentRound());
+        if (player.isMrX()) {
+            goNextRound();
+            notifyRound(getCurrentRound());
+        }
         if (player.isDetective()) getMrX().addTicket(ticket);
 
         notifyMove(move);
-        if (mrXIsCaptured()) isGameOver();
+        if (isGameOver()) {
+            notifyGameOver();
+        }
     }
 
     // overloaded version to simplify calls where the destination hasn't been masked
@@ -262,7 +264,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         startTurn(move);
     }
 
-    private void requestNextMove() {
+    private void requestMove() {
         ScotlandYardPlayer player = getPlayerInstanceByColour(getCurrentPlayer());
         player.player().makeMove(this, player.location(), getValidMoves(player), this);
     }
@@ -273,11 +275,8 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
 
-        if (getValidMoves(player).contains(move)) {
-            performMove(player, move);
-        } else {
-            throw new IllegalArgumentException("Illegal move");
-        }
+        if (!getValidMoves(player).contains(move)) throw new IllegalArgumentException("Illegal move");
+        performMove(player, move);
 
         endTurn();
     }
@@ -292,11 +291,9 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public void startRotate() {
-        if (isGameOver()) {
-            throw new IllegalStateException("Game's already over");
-        }
+        if (isGameOver()) throw new IllegalStateException("Game's already over");
 
-        requestNextMove();
+        requestMove();
     }
 
     private void notifyRound(int round) {
@@ -437,11 +434,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private int getLastRevealedBlack() {
-        return this.mLastRevealedBlack;
+        return mLastRevealedBlack;
     }
 
     private void setLastRevealedBlack(int n) {
-        this.mLastRevealedBlack = n;
+        mLastRevealedBlack = n;
     }
 
     @Override
@@ -498,7 +495,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     private void populateWinningPlayersSet(boolean winnerIsMrX) {
         for (Colour player : getPlayers())
             if ((player.isDetective() && !winnerIsMrX) || (player.isMrX() && winnerIsMrX))
-                this.mWinningPlayers.add(player);
+                mWinningPlayers.add(player);
     }
 
     private void notifyGameOver() {
@@ -525,8 +522,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
         populateWinningPlayersSet(mrXWon);
 
-        notifyGameOver();
-
         return true;
     }
 
@@ -539,10 +534,13 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return mTurnLog.nextTurn();
     }
 
+    private void goNextRound(){
+        mCurrentRound = mTurnLog.nextRound();
+    }
+
     @Override
     public int getCurrentRound() {
-        mCurrentRound = mTurnLog.nextRound();
-        return this.mCurrentRound;
+        return mCurrentRound;
     }
 
     @Override
@@ -568,7 +566,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             throw new IllegalArgumentException("Spectator already registered");
         }
 
-        this.mSpectators.add(spectator);
+        mSpectators.add(spectator);
     }
 
     @Override
@@ -579,7 +577,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
             throw new IllegalArgumentException("Spectator has not been registered");
         }
 
-        this.mSpectators.remove(spectator);
+        mSpectators.remove(spectator);
     }
 
 }
