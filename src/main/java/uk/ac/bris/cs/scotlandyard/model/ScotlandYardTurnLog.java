@@ -174,9 +174,9 @@ public class ScotlandYardTurnLog {
 
             int turn = Collections2.filter(mContents, isTrueBlack).size();
 
-            return turn+1;
+            return turn;
         } else {
-            return ScotlandYardView.NOT_STARTED;
+            return 1;
         }
     }
 

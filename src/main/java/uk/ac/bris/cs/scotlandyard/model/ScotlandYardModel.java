@@ -145,24 +145,6 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         DEBUG_PRINT(endTurnDebug);
     }
 
-    private void startTurn(Move move) {
-        // start a new turn and log its creation
-        mTurnLog.add(move, getCurrentRound());
-        DEBUG_PRINT("TURN " + getCurrentTurn() + "\n" + move.toString());
-    }
-
-    private void endTurn() {
-        DEBUG_ENDTURN();
-
-        if (mTurnLog.nextColour() == Black) {
-            notifyRotationComplete();
-            if (isGameOver()) {
-                notifyGameOver();
-            }
-        } else {
-            requestMove();
-        }
-    }
 
     private void maskedDoubleMove(ScotlandYardPlayer player, Ticket firstTicket, int firstDestination, int trueFirstDestination, Ticket secondTicket, int secondDestination, int trueSecondDestination) {
         DoubleMove doubleMove = new DoubleMove(player.colour(), firstTicket, firstDestination, secondTicket, secondDestination);
@@ -230,18 +212,19 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     }
 
     private void performTicketMove(ScotlandYardPlayer player, TicketMove move, int trueDestination) {
-        Ticket ticket = move.ticket();
-
-        player.removeTicket(ticket);
-        player.location(trueDestination);
-
         if (player.isMrX()) {
             goNextRound();
             notifyRound(getCurrentRound());
         }
+
+        Ticket ticket = move.ticket();
+
+        player.removeTicket(ticket);
+        player.location(trueDestination);
         if (player.isDetective()) getMrX().addTicket(ticket);
 
         notifyMove(move);
+        mTurnLog.add(move, getCurrentRound());
         if (isGameOver()) {
             notifyGameOver();
         }
@@ -254,19 +237,23 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     private void performPassMove(PassMove move) {
         notifyMove(move);
+        mTurnLog.add(move, getCurrentRound());
     }
 
     private void performMove(ScotlandYardPlayer player, Move move) {
         if (move instanceof TicketMove) performTicketMove(player, (TicketMove) move);
         else if (move instanceof DoubleMove) performDoubleMove(player, (DoubleMove) move);
         else if (move instanceof PassMove) performPassMove((PassMove) move);
-
-        startTurn(move);
     }
 
-    private void requestMove() {
-        ScotlandYardPlayer player = getPlayerInstanceByColour(getCurrentPlayer());
-        player.player().makeMove(this, player.location(), getValidMoves(player), this);
+    private void requestMove(Colour colour) {
+        ScotlandYardPlayer scotlandYardPlayer = getPlayerInstanceByColour(colour);
+
+        Player player = scotlandYardPlayer.player();
+        Set<Move> moves = getValidMoves(scotlandYardPlayer);
+        int location = scotlandYardPlayer.location();
+
+        player.makeMove(this, location, moves, this);
     }
 
     @Override
@@ -276,9 +263,20 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         ScotlandYardPlayer player = getPlayerInstanceByColour(move.colour());
 
         if (!getValidMoves(player).contains(move)) throw new IllegalArgumentException("Illegal move");
+
         performMove(player, move);
 
-        endTurn();
+        mCurrentPlayer++;
+        if (mCurrentPlayer >= getPlayers().size()) {
+            mCurrentPlayer = 0;
+            goNextRound();
+            notifyRotationComplete();
+            if (isGameOver()) {
+                notifyGameOver();
+            }
+        }
+
+        requestMove(getCurrentPlayer());
     }
 
     private void notifyRotationComplete() {
@@ -293,8 +291,10 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
     public void startRotate() {
         if (isGameOver()) throw new IllegalStateException("Game's already over");
 
-        requestMove();
+        requestMove(getCurrentPlayer());
     }
+
+    private int mCurrentPlayer = 0;
 
     private void notifyRound(int round) {
         for (Spectator spectator : getSpectators()) {
@@ -327,11 +327,11 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         return fromTransport(edge.data());
     }
 
-    private boolean canSecret(ScotlandYardPlayer player) {
+    private boolean canMakeSecretMove(ScotlandYardPlayer player) {
         return player.hasTickets(Secret);
     }
 
-    private boolean canDouble(ScotlandYardPlayer player) {
+    private boolean canMakeDoubleMove(ScotlandYardPlayer player) {
         return player.hasTickets(Double) && getRoundsRemaining() >= 2;
     }
 
@@ -350,52 +350,52 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
         Collection<Edge<Integer, Transport>> options = getOptionsFromLocation(location);
 
         // enable special flags for Mr. X
-        Boolean canSecret = canSecret(player);
-        Boolean canDouble = canDouble(player);
+        Boolean canSecret = canMakeSecretMove(player);
+        Boolean canDouble = canMakeDoubleMove(player);
 
-        for (Edge<Integer, Transport> edge : options) {
-            int destination = getDestinationFromEdge(edge);
-            Ticket ticket = getTicketFromEdge(edge);
+        if (!player.tickets().isEmpty()) {
+            for (Edge<Integer, Transport> edge : options) {
+                int destination = getDestinationFromEdge(edge);
+                Ticket ticket = getTicketFromEdge(edge);
 
-            if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
-                moves.add(new TicketMove(colour, ticket, destination));
+                if ((player.hasTickets(ticket) || canSecret) && !occupied.contains(destination)) {
+                    moves.add(new TicketMove(colour, ticket, destination));
 
-                if (canSecret) {
-                    moves.add(new TicketMove(colour, Secret, destination));
-                }
+                    if (canSecret) {
+                        moves.add(new TicketMove(colour, Secret, destination));
+                    }
 
-                if (canDouble) {
-                    // generate collection of double-turn tickets (edges)
-                    Collection<Edge<Integer, Transport>> moreOptions = getOptionsFromLocation(destination);
+                    if (canDouble) {
+                        // generate collection of double-turn tickets (edges)
+                        Collection<Edge<Integer, Transport>> moreOptions = getOptionsFromLocation(destination);
 
-                    for (Edge<Integer, Transport> secondEdge : moreOptions) {
-                        int secondDestination = getDestinationFromEdge(secondEdge);
-                        Ticket secondTicket = getTicketFromEdge(secondEdge);
+                        for (Edge<Integer, Transport> secondEdge : moreOptions) {
+                            int secondDestination = getDestinationFromEdge(secondEdge);
+                            Ticket secondTicket = getTicketFromEdge(secondEdge);
 
-                        if (!occupied.contains(secondDestination) || secondDestination == location && player.hasTickets(secondTicket)) {
-                            if (ticket != secondTicket || player.hasTickets(ticket, 2)) {
-                                moves.add(new DoubleMove(colour, ticket, destination, secondTicket, secondDestination));
-                            }
+                            if (!occupied.contains(secondDestination) || secondDestination == location && player.hasTickets(secondTicket)) {
+                                if (ticket != secondTicket || player.hasTickets(ticket, 2)) {
+                                    moves.add(new DoubleMove(colour, ticket, destination, secondTicket, secondDestination));
+                                }
 
-                            if (canSecret) {
-                                // add moves for use of a secret ticket first
-                                moves.add(new DoubleMove(colour, Secret, destination, secondTicket, secondDestination));
+                                if (canSecret) {
+                                    // add moves for use of a secret ticket first
+                                    moves.add(new DoubleMove(colour, Secret, destination, secondTicket, secondDestination));
 
-                                // add moves for use of a secret ticket second
-                                moves.add(new DoubleMove(colour, ticket, destination, Secret, secondDestination));
+                                    // add moves for use of a secret ticket second
+                                    moves.add(new DoubleMove(colour, ticket, destination, Secret, secondDestination));
 
-                                // add moves for use of two secret tickets
-                                if (player.hasTickets(Secret, 2)) {
-                                    moves.add(new DoubleMove(colour, Secret, destination, Secret, secondDestination));
+                                    // add moves for use of two secret tickets
+                                    if (player.hasTickets(Secret, 2)) {
+                                        moves.add(new DoubleMove(colour, Secret, destination, Secret, secondDestination));
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
-
-        if (colour.isDetective() && moves.isEmpty()) {
+        } else if (colour.isDetective()) {
             moves.add(new PassMove(colour));
         }
 
@@ -527,7 +527,7 @@ public class ScotlandYardModel implements ScotlandYardGame, Consumer<Move> {
 
     @Override
     public Colour getCurrentPlayer() {
-        return mTurnLog.nextColour();
+        return getPlayers().get(mCurrentPlayer);
     }
 
     private int getCurrentTurn() {
